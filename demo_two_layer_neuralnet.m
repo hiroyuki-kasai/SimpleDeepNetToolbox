@@ -19,7 +19,6 @@ trainer = trainer(network, x_train, t_train, x_test, t_test, 30, 100, 0, 1);
 % train
 info = trainer.train(); 
 
-
 % plot
 fs = 20;
 figure
