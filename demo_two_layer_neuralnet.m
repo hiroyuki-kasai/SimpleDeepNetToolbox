@@ -13,7 +13,7 @@ network = two_layer_net(784, 50, 10, 'AdaGrad', 0.1);
 
 
 % set trainer
-trainer = trainer(network, x_train, t_train, x_test, t_test, 100, 100, 0, 1);
+trainer = trainer(network, x_train, t_train, x_test, t_test, 50, 100, 0, 1);
 
 
 % train

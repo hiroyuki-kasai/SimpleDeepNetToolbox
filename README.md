@@ -85,7 +85,7 @@ Just execute `demo_multilayer_neuralnet` for the simplest demonstration of this 
 network = two_layer_net(784, 50, 10, 'AdaGrad', 0.1);
 
 %% set trainer
-trainer = trainer(network, x_train, t_train, x_test, t_test, 100, 100, 0, 1);
+trainer = trainer(network, x_train, t_train, x_test, t_test, 50, 100, 0, 1);
 
 %% train
 info = trainer.train(); 
@@ -101,7 +101,8 @@ display_graph('epoch', 'accuracy', {'Train', 'Test'}, {}, {train_info, test_info
 ```
 
 <br />
-Let take a closer look at the code above bit by bit. The procedure has only **4 steps**!
+
+Let's take a closer look at the code above bit by bit. The procedure has only **4 steps**!
 
 **Step 1: Load dataset**
 
@@ -109,38 +110,43 @@ First, we load a dataset including train set and test set using a data loader fu
 The output include train set and test set, and related other data.
 
 ```Matlab    
-dataset_dir = './datasets/';
-dataset_name = 'mnist';
 [x_train, t_train, train_num, x_test, t_test, test_num, class_num, dimension, ~, ~] = ...
-    load_dataset(dataset_name, dataset_dir, 5000, 1000, false);
+    load_dataset('mnist', './datasets/',  inf, inf, false);
 ```
 
 **Step 2: Set network**
 
-The problem to be solved should be defined properly from the [supported problems](#supp_pro). `logistic_regression()` provides the comprehensive 
-functions for a logistic regression problem. This returns the cost value by `cost(w)`, the gradient by `grad(w)` and the hessian by `hess(w)` when given `w`. 
-These are essential for any gradient descent algorithms.
+The next step defines the network architecture. This example uses a two layer neural network with the input size 784, the hidden layer size 50, and the output layer size 10. 
+The solver algorithm and its step size, which are 'AdaGrad' and 0.1 in this example, respectively, are also defined. 
+
 ```Matlab
-network = multilayer_neural_net(dimension, [100 80], class_num, 'relu', 'relu', 0.01, 0, 0, 0, opt_alg, 0.1);
+%% set network
+network = two_layer_net(784, 50, 10, 'AdaGrad', 0.1);
 ```
 
-**Step 3: Perform solver**
+**Step 3: Perform trainer**
 
-Now, you can perform optimization solvers, i.e., SGD and SVRG, calling [solver functions](#supp_solver), i.e., `sgd()` function and `svrg()` function after setting some optimization options. 
+Now, you can train the network, where the batchsize is set to 100 and the maximum number of epoch is set to 50.  
+
 ```Matlab
-options.w_init = data.w_init;
-options.step_init = 0.01;  
-[w_sgd, info_sgd] = sgd(problem, options);  
-[w_svrg, info_svrg] = svrg(problem, options);
+%% set trainer
+trainer = trainer(network, x_train, t_train, x_test, t_test, 50, 100, 0, 1);
 ```
 They return the final solutions of `w` and the statistics information that include the histories of epoch numbers, cost values, norms of gradient, the number of gradient evaluations and so on.
 
 **Step 4: Show result**
 
-Finally, `display_graph()` provides output results of decreasing behavior of the cost values in terms of the number of gradient evaluations. 
-Note that each algorithm needs different number of evaluations of samples in each epoch. Therefore, it is common to use this number to evaluate stochastic optimization algorithms instead of the number of iterations.
+Finally, `display_graph()` provides output results of decreasing behavior of the cost values in terms of the number of epochs. The accuracy results for the train and the test are also shown. 
+
 ```Matlab
-display_graph('grad_calc_count','cost', {'SGD', 'SVRG'}, {w_sgd, w_svrg}, {info_sgd, info_svrg});
+% plot
+display_graph('epoch', 'cost', {'Tow layer net'}, {}, {info});    
+
+train_info = info;
+test_info = info;
+train_info.accuracy = info.train_acc;
+test_info.accuracy = info.test_acc;
+display_graph('epoch', 'accuracy', {'Train', 'Test'}, {}, {train_info, test_info}); 
 ```
 
 That's it!
@@ -150,6 +156,7 @@ That's it!
 More plots
 ----------------------------
 
+TBA.
 
 <br />
 
