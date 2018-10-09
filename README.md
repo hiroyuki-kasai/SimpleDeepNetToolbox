@@ -71,10 +71,10 @@ download;
 <br />
 
 
-Simplest usage example: 4 steps!
+Simplest usage example: 5 steps!
 ----------------------------
 
-Just execute `demo_multilayer_neuralnet` for the simplest demonstration of this package. This is a forward backward neural network.
+Just execute `demo_two_layer_neuralnet` for the simplest demonstration of this package. This is a forward backward neural network.
 
 ```Matlab
 %% load dateaset
@@ -90,7 +90,7 @@ trainer = trainer(network, x_train, t_train, x_test, t_test, 50, 100, 0, 1);
 %% train
 info = trainer.train(); 
 
-% plot
+%% plot
 display_graph('epoch', 'cost', {'Tow layer net'}, {}, {info});    
 
 train_info = info;
@@ -124,17 +124,26 @@ The solver algorithm and its step size, which are 'AdaGrad' and 0.1 in this exam
 network = two_layer_net(784, 50, 10, 'AdaGrad', 0.1);
 ```
 
-**Step 3: Perform trainer**
+**Step 3: Set trainer**
 
-Now, you can train the network, where the batchsize is set to 100 and the maximum number of epoch is set to 50.  
+You also set the network to be used. In this example, the batchsize is set to 100 and the maximum number of epoch is set to 50.  
 
 ```Matlab
 %% set trainer
 trainer = trainer(network, x_train, t_train, x_test, t_test, 50, 100, 0, 1);
 ```
+
+**Step 4: Perform trainer**
+
+Now, you start to train the network.  
+
+```Matlab
+%% train
+info = trainer.train(); 
+```
 They return the final solutions of `w` and the statistics information that include the histories of epoch numbers, cost values, norms of gradient, the number of gradient evaluations and so on.
 
-**Step 4: Show result**
+**Step 5: Show result**
 
 Finally, `display_graph()` provides output results of decreasing behavior of the cost values in terms of the number of epochs. The accuracy results for the train and the test are also shown. 
 
