@@ -40,6 +40,14 @@ The main purpose of this toolbox is to allows you, especially "MATLAB-lover" res
 - **Sigmoid layer**
 - **Softmax layer**
 
+## <a name=""> List of the optimization solvers available in SimpleDeepNetToolbox </a>
+
+
+- **Vanila SGD** 
+- **AdaGrad**
+- **Momentum SGD**
+
+
 <br />
 
 Folders and files
