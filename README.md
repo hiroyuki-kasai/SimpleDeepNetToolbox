@@ -27,6 +27,19 @@ The main purpose of this toolbox is to allows you, especially "MATLAB-lover" res
 - **Feedforward Backpropagation Neural Networks** 
 - **Convolutional Neural Networks**
 
+
+## <a name=""> List of the layers available in SimpleDeepNetToolbox </a>
+
+
+- **Affine layer** 
+- **Conolution layer**
+- **Pooling layer**
+- **Dropout layer**
+- **Batch normalization layer** (Under construction)
+- **ReLu (Rectified Linear Unit) layer**
+- **Sigmoid layer**
+- **Softmax layer**
+
 <br />
 
 Folders and files
