@@ -21,14 +21,14 @@ The main purpose of this toolbox is to allows you, especially "MATLAB-lover" res
 
 
 
-## <a name=""> List of the network available in SimpleDeepNetToolbox </a>
+## <a name=""> List of available network architectures</a>
 
 
 - **Feedforward Backpropagation Neural Networks** 
 - **Convolutional Neural Networks**
 
 
-## <a name=""> List of the layers available in SimpleDeepNetToolbox </a>
+## <a name=""> List of available layers</a>
 
 
 - **Affine layer** 
@@ -40,7 +40,7 @@ The main purpose of this toolbox is to allows you, especially "MATLAB-lover" res
 - **Sigmoid layer**
 - **Softmax layer**
 
-## <a name=""> List of the optimization solvers available in SimpleDeepNetToolbox </a>
+## <a name=""> List of available optimization solvers</a>
 
 
 - **Vanila SGD** 
@@ -78,9 +78,9 @@ run_me_first;
 ```
 
 
-Second to do: download datasets and external libraries
+Second to do: download datasets
 ----------------------------
-Run `download` for downloading datasets and external libraries.
+Run `download` for downloading datasets.
 ```Matlab
 %% Run the downloading script
 download;
