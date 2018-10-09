@@ -11,7 +11,7 @@ Latest library version: 1.0.0 (see Release notes for more info)
 
 Introduction
 ----------
-The SimpleDeepNetToolbox is a **pure-MATLAB** and simple toolbox for deep learning.
+The SimpleDeepNetToolbox is a **pure-MATLAB** and simple toolbox for deep learning. This toolbox was originally ported from [python library](https://github.com/oreilly-japan/deep-learning-from-scratch). However, major modification have been made for MATLAB implementation and its efficient implementation.
 
 There are much better other toolboxes available for deep learning, e.g. Theano, torch or tensorflow. 
 I would definitely recomment you to use one of such tools for your problems at hand. 
@@ -141,11 +141,11 @@ Now, you start to train the network.
 %% train
 info = trainer.train(); 
 ```
-They return the final solutions of `w` and the statistics information that include the histories of epoch numbers, cost values, norms of gradient, the number of gradient evaluations and so on.
+It return the statistics information that include the histories of epoch numbers, cost values, train and test accuracies, and so on.
 
 **Step 5: Show result**
 
-Finally, `display_graph()` provides output results of decreasing behavior of the cost values in terms of the number of epochs. The accuracy results for the train and the test are also shown. 
+Finally, `display_graph()` provides output results of decreasing behavior of the cost values in terms of the number of epoch. The accuracy results for the train and the test are also shown. 
 
 ```Matlab
 % plot
