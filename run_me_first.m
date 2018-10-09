@@ -18,6 +18,11 @@ cd utils/;
 addpath(genpath(pwd));
 cd ..;
 
+cd plotter/;
+addpath(genpath(pwd));
+cd ..;
+
+
 cd datasets/;
 addpath(genpath(pwd));
 cd ..;
@@ -30,6 +35,4 @@ fprintf('###          Welcome to SimpleDeepNetToolbox           ###\n');
 fprintf('###      (version:%s, released:%s)         ###\n', version, release_date);
 fprintf('###                                                    ###\n');
 fprintf('##########################################################\n');
-
-
 

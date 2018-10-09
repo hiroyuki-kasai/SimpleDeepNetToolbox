@@ -110,19 +110,19 @@ classdef trainer < handle
 
             if obj.verbose > 0
                 if mod(iter, obj.iter_num_per_epoch) == 0
-                    obj.info.epoch_array = [obj.info.epoch_array obj.current_epoch];
+                    obj.info.epoch = [obj.info.epoch obj.current_epoch];
 
                     % calculate loss
                     loss = obj.network.loss(obj.x_train, obj.t_train);
                     fprintf('# Epoch: %03d (iter:%05d): cost = %.10e, ', obj.current_epoch, iter, loss);
-                    obj.info.cost_array = [obj.info.cost_array loss];
+                    obj.info.cost = [obj.info.cost loss];
 
                     % calcualte accuracy
                     train_acc = obj.network.accuracy(obj.x_train, obj.t_train);
                     test_acc = obj.network.accuracy(obj.x_test, obj.t_test);
                     fprintf('accuracy (train, test) = (%5.4f, %5.4f)\n', train_acc, test_acc);
-                    obj.info.train_acc_array = [obj.info.train_acc_array train_acc];
-                    obj.info.test_acc_array = [obj.info.test_acc_array test_acc];
+                    obj.info.train_acc = [obj.info.train_acc train_acc];
+                    obj.info.test_acc = [obj.info.test_acc test_acc];
                 end  
             end
 
@@ -132,19 +132,19 @@ classdef trainer < handle
         function info = train(obj)
             
             if obj.verbose > 0
-                obj.info.epoch_array = 0;
+                obj.info.epoch = 0;
                 
                 % calculate loss
                 loss = obj.network.loss(obj.x_train, obj.t_train);
                 fprintf('# Epoch: 000 (iter:00000): cost = %.10e, ', loss);
-                obj.info.cost_array = loss;
+                obj.info.cost = loss;
 
                 % calcualte accuracy
                 train_acc = obj.network.accuracy(obj.x_train, obj.t_train);
                 test_acc = obj.network.accuracy(obj.x_test, obj.t_test);
                 fprintf('accuracy (train, test) = (%5.4f, %5.4f)\n', train_acc, test_acc);
-                obj.info.train_acc_array = train_acc;
-                obj.info.test_acc_array = test_acc;                
+                obj.info.train_acc = train_acc;
+                obj.info.test_acc = test_acc;                
             end
             
             for iter = 1 : obj.max_iter

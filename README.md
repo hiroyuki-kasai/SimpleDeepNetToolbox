@@ -77,39 +77,27 @@ Simplest usage example: 4 steps!
 Just execute `demo_multilayer_neuralnet` for the simplest demonstration of this package. This is a forward backward neural network.
 
 ```Matlab
-%% Execute the demonstration script
-demo_multilayer_neuralnet;
-```
-
-The "**demo_multilayer_neuralnet.m**" file contains below.
-```Matlab
-% set parameters
-max_epoch = 30;
-batch_size = 100;
-opt_alg = 'SGD';
-learning_rate = 0.1;
-
-
-% load dateaset
-dataset_dir = './datasets/';
-dataset_name = 'mnist';
+%% load dateaset
 [x_train, t_train, train_num, x_test, t_test, test_num, class_num, dimension, ~, ~] = ...
-    load_dataset(dataset_name, dataset_dir, 5000, 1000, false);
+    load_dataset('mnist', './datasets/',  inf, inf, false);
 
+%% set network
+network = two_layer_net(784, 50, 10, 'AdaGrad', 0.1);
 
-% set network
-network = multilayer_neural_net(dimension, [100 80], class_num, 'relu', 'relu', 0.01, 0, 0, 0, opt_alg, 0.1);
+%% set trainer
+trainer = trainer(network, x_train, t_train, x_test, t_test, 100, 100, 0, 1);
 
+%% train
+info = trainer.train(); 
 
-% set trainer
-trainer = trainer(network, x_train, t_train, x_test, t_test, max_epoch, batch_size, 0, 1);
+% plot
+display_graph('epoch', 'cost', {'Tow layer net'}, {}, {info});    
 
-
-% train
-tic             
-[info] = trainer.train(); 
-elapsedTime = toc;
-fprintf('elapsed time = %5.2f [sec]\n', elapsedTime);
+train_info = info;
+test_info = info;
+train_info.accuracy = info.train_acc;
+test_info.accuracy = info.test_acc;
+display_graph('epoch', 'accuracy', {'Train', 'Test'}, {}, {train_info, test_info});   
 ```
 
 <br />
