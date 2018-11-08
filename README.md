@@ -103,10 +103,10 @@ Just execute `demo_two_layer_neuralnet` for the simplest demonstration of this p
     load_dataset('mnist', './datasets/',  inf, inf, false);
 
 %% set network
-network = two_layer_net(784, 50, 10, 'AdaGrad', 0.1);
+network = two_layer_net(784, 50, 10, []);
 
 %% set trainer
-trainer = trainer(network, x_train, t_train, x_test, t_test, 50, 100, 0, 1);
+trainer = nn_trainer(network, x_train, t_train, x_test, t_test, 'AdaGrad', 0.1, 50, 100, 1);
 
 %% train
 info = trainer.train(); 
@@ -138,20 +138,20 @@ The output include train set and test set, and related other data.
 **Step 2: Set network**
 
 The next step defines the network architecture. This example uses a two layer neural network with the input size 784, the hidden layer size 50, and the output layer size 10. 
-The solver algorithm and its step size, which are 'AdaGrad' and 0.1 in this example, respectively, are also defined. 
 
 ```Matlab
 %% set network
-network = two_layer_net(784, 50, 10, 'AdaGrad', 0.1);
+network = two_layer_net(784, 50, 10, []);
 ```
 
 **Step 3: Set trainer**
 
-You also set the network to be used. In this example, the batchsize is set to 100 and the maximum number of epoch is set to 50.  
+You also set the network to be used. The solver algorithm and its step size, which are 'AdaGrad' and 0.1 in this example, respectively, are also defined. 
+In this example, the batchsize is set to 100 and the maximum number of epoch is set to 50.  
 
 ```Matlab
 %% set trainer
-trainer = trainer(network, x_train, t_train, x_test, t_test, 50, 100, 0, 1);
+trainer = nn_trainer(network, x_train, t_train, x_test, t_test, 'AdaGrad', 0.1, 50, 100, 1);
 ```
 
 **Step 4: Perform trainer**
