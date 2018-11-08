@@ -14,8 +14,8 @@ Introduction
 The SimpleDeepNetToolbox is a **pure-MATLAB** and simple toolbox for deep learning. This toolbox was originally ported from [python library](https://github.com/oreilly-japan/deep-learning-from-scratch). However, major modification have been made for MATLAB implementation and its efficient implementation.
 
 There are much better other toolboxes available for deep learning, e.g. Theano, torch or tensorflow. 
-I would definitely recomment you to use one of such tools for your problems at hand. 
-The main purpose of this toolbox is to allows you, especially "MATLAB-lover" researches, to undedrstand deep learning techniques using "non-black-box" simple implementations. 
+I would definitely recommend you to use one of such tools for your problems at hand. 
+The main purpose of this toolbox is to allows you, especially "MATLAB-lover" researchers, to undedrstand deep learning techniques using "non-black-box" simple implementations. 
 
 <br />
 
