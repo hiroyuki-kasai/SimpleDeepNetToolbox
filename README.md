@@ -122,6 +122,7 @@ display_graph('epoch', 'accuracy', {'Train', 'Test'}, {}, {train_info, test_info
 ```
 
 <br />
+<br />
 
 Let's take a closer look at the code above bit by bit. The procedure has only **5 steps**!
 
@@ -162,7 +163,7 @@ Now, you start to train the network.
 %% train
 info = trainer.train(); 
 ```
-It return the statistics information that include the histories of epoch numbers, cost values, train and test accuracies, and so on.
+It returns the statistics information that include the histories of epoch numbers, cost values, train and test accuracies, and so on.
 
 **Step 5: Show result**
 
