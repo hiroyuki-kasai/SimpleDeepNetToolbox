@@ -123,7 +123,7 @@ display_graph('epoch', 'accuracy', {'Train', 'Test'}, {}, {train_info, test_info
 
 <br />
 
-Let's take a closer look at the code above bit by bit. The procedure has only **4 steps**!
+Let's take a closer look at the code above bit by bit. The procedure has only **5 steps**!
 
 **Step 1: Load dataset**
 
