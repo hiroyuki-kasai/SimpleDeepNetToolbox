@@ -2,7 +2,7 @@ clc;
 clear;
 close all;
 
-%rng('default');
+rng('default');
 
 max_epoch = 30;
 verbose = 1;
@@ -52,12 +52,13 @@ conv_param.stride = 1;
 hidden_size = 100;
 output_size = class_num;
 use_num_grad = false;
-network = simple_conv_net(input_dim, conv_param, hidden_size, output_size, w_decay_lambda, opt_alg, learning_rate);
+network = simple_conv_net(input_dim, conv_param, hidden_size, output_size, w_decay_lambda, use_num_grad);
 
 
 % set network
-trainer = trainer(network, x_train, t_train, x_test, t_test, ...
-                 max_epoch, batch_size, use_num_grad, verbose);
+trainer = nn_trainer(network, x_train, t_train, x_test, t_test, opt_alg, learning_rate, ...
+                 max_epoch, batch_size, verbose);
+
 
 % train
 tic             

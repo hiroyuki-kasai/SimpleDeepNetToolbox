@@ -3,9 +3,9 @@
 
 Authors: [Hiroyuki Kasai](http://kasai.kasailab.com/)
 
-Last page update: October 09, 2018
+Last page update: November, 07, 2018
 
-Latest library version: 1.0.0 (see Release notes for more info.)
+Latest library version: 1.0.1 (see Release notes for more info.)
 
 <br />
 
@@ -213,6 +213,8 @@ If you have any problems or questions, please contact the author: [Hiroyuki Kasa
 
 Release notes
 --------------
+* Version 1.0.1 (Nov. 07, 2018)
+    - Some class structures are re-configured.
 * Version 1.0.0 (Oct. 08, 2018)
     - Initial version.
 

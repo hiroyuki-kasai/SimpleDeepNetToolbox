@@ -2,7 +2,7 @@
 clear;
 close all;
 
-%rng('default')
+rng('default')
 
 % set parameters
 max_epoch = 30;
@@ -24,11 +24,11 @@ dataset_name = 'mnist';
 
 
 % set network
-network = multilayer_neural_net(dimension, [100 80], class_num, 'relu', 'relu', 0.01, 0, 0, 0, opt_alg, 0.1);
+network = multilayer_neural_net(dimension, [100 80], class_num, 'relu', 'relu', 0.01, 1, 0.5, 0, 0);
 
 
 % set trainer
-trainer = trainer(network, x_train, t_train, x_test, t_test, max_epoch, batch_size, 0, 1);
+trainer = nn_trainer(network, x_train, t_train, x_test, t_test, opt_alg, learning_rate, max_epoch, batch_size, 1);
 
 
 % train
@@ -41,7 +41,7 @@ fprintf('elapsed time = %5.2f [sec]\n', elapsedTime);
 % plot
 fs = 20;
 figure
-plot(info.epoch_array, info.cost_array, '-', 'LineWidth',2,'Color', [255, 0, 0]/255);
+plot(info.epoch, info.cost, '-', 'LineWidth',2,'Color', [255, 0, 0]/255);
 ax1 = gca;
 set(ax1,'FontSize',fs);
 title('epoch vs. cost')
@@ -50,8 +50,8 @@ ylabel('cost','FontName','Arial','FontSize',fs,'FontWeight','bold')
 legend('cost');
 
 figure
-plot(info.epoch_array, info.train_acc_array, '-', 'LineWidth',2,'Color', [0, 0, 255]/255); hold on 
-plot(info.epoch_array, info.test_acc_array, '-', 'LineWidth',2,'Color', [0, 255, 0]/255); hold off 
+plot(info.epoch, info.train_acc, '-', 'LineWidth',2,'Color', [0, 0, 255]/255); hold on 
+plot(info.epoch, info.test_acc, '-', 'LineWidth',2,'Color', [0, 255, 0]/255); hold off 
 ax1 = gca;
 set(ax1,'FontSize',fs);
 title('epoch vs. accuracy')

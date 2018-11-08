@@ -2,7 +2,7 @@ clc;
 clear;
 close all;
 
-%rng('default');
+rng('default');
 
 
 % set parameters
@@ -54,12 +54,12 @@ dataset_name = 'usps';
 
 % set network
 network = multilayer_neural_net(dimension, [100, 100, 100, 100, 100], class_num, 'relu', 'relu', ...
-                w_decay_lambda, dropout_flag, dropout_ratio, batchnorm_flag, opt_alg, learning_rate);
+                w_decay_lambda, dropout_flag, dropout_ratio, batchnorm_flag, use_num_grad);
 
 
 % set trainer
-trainer = trainer(network, x_train, t_train, x_test, t_test, ...
-                 max_epoch, batch_size, use_num_grad, verbose);
+trainer = nn_trainer(network, x_train, t_train, x_test, t_test, opt_alg, learning_rate, ...
+                 max_epoch, batch_size, verbose);
 
 
 %train             

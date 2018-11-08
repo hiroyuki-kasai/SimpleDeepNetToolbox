@@ -8,7 +8,7 @@ clc;
 %% dataset
 fprintf('###### Dataset downlowd ######\n\n');
 % local folder
-local_folder_name = 'datasets_new';
+local_folder_name = 'datasets';
 
 
 if ~exist(local_folder_name, 'dir')   

@@ -9,11 +9,17 @@ classdef two_layer_net < handle
 % This file is part of SimpleDeepNetToolbox.
 %
 % Created by H.Kasai on Oct. 02, 2018
-% Modified by H.Kasai on Oct. 08, 2018
+%
+% Change log: 
+%
+%   Nov. 07, 2018 (H.Kasai)
+%       Moved optimizer to trainer class.
+%       Added get_params method.
+%       Added calculate_grads method.
 %
 % This class was originally ported from the python library below.
 % https://github.com/oreilly-japan/deep-learning-from-scratch.
-% Major modification have been made for MATLAB implementation and  
+% Major modifications have been made for MATLAB implementation and  
 % its efficient implementation.
 
 
@@ -35,29 +41,39 @@ classdef two_layer_net < handle
         % grads
         grads;        
         
-        % optimizer
-        optimizer;
-        opt_algorithm;
-        learning_rate;
-        
         % else
         weight_init_std;
+        use_num_grad;
+        
     end
     
     methods
-        function obj = two_layer_net(input_size, hidden_size, output_size, opt_alg, lrate, varargin) 
+        function obj = two_layer_net(input_size, hidden_size, output_size, varargin) 
             
-            if nargin < 6
+            if nargin < 4
+                % no network options
                 obj.weight_init_std = 0.01;
+                obj.use_num_grad = 0;
             else
-                obj.weight_init_std = varargin{1};
+                options = varargin{1};
+                if ~isfield(options, 'weight_init_std')
+                    obj.weight_init_std = 0.01;
+                else
+                    obj.weight_init_std = options.weight_init_std;
+                end
+                
+                if ~isfield(options, 'use_num_grad')
+                    obj.use_num_grad = 0;
+                else
+                    obj.use_num_grad = options.use_num_grad;
+                end                
+
             end
 
             obj.name = 'two_layer_net';  
             obj.hidden_size = hidden_size;
             obj.output_size = output_size;
-            obj.opt_algorithm = opt_alg;
-            obj.learning_rate = lrate;
+
             
 
             
@@ -86,21 +102,37 @@ classdef two_layer_net < handle
             %% generate layers
             obj.layer_manager = layer_manager();            
             
-           % generate affine layers
+            % generate affine layers
             obj.layer_manager = obj.layer_manager.add_layer('affine', obj.params('W1'), obj.params('b1'));
             % generate activation layers
             obj.layer_manager = obj.layer_manager.add_layer('relu');            
-           % generate affine layers
+            % generate affine layers
             obj.layer_manager = obj.layer_manager.add_layer('affine', obj.params('W2'), obj.params('b2'));
             % generate softmax_with_loss layer
             obj.layer_manager = obj.layer_manager.add_last_layer('softmax');
             
-
-            
-            %% generate optimizer
-            obj.optimizer = stochastic_optimizer(obj.params, obj.opt_algorithm, obj.learning_rate, []);              
-
         end
+        
+        
+        % get paramters
+        function params = get_params(obj)
+            
+            params = obj.params;
+            
+        end
+        
+        
+        % set paramters
+        function obj = set_params(obj, params)
+            
+            obj.params = params;
+           
+            % update internal params in each affine layer
+            obj.layer_manager.aff_layers{1}.update_params(params('W1'), params('b1'));
+            obj.layer_manager.aff_layers{2}.update_params(params('W2'), params('b2'));
+            
+        end        
+        
         
         
         function f = loss(obj, x, t)
@@ -140,8 +172,20 @@ classdef two_layer_net < handle
         
         
         
+        %% calculate gradient
+        function grads = calculate_grads(obj, x_curr_batch, t_curr_batch)
+            
+            if obj.use_num_grad
+                obj.grads = obj.numerical_gradient(x_curr_batch, t_curr_batch);
+            else
+                obj.grads = obj.gradient(x_curr_batch, t_curr_batch);
+            end  
+            
+            grads = obj.grads;
+        end
         
-        %% numerical gradient
+        
+        % 1. numerical gradient
         function grads = numerical_gradient(obj, x_curr_batch, t_curr_batch)
             
             grads = [];
@@ -229,7 +273,7 @@ classdef two_layer_net < handle
         
         
         
-        %% backprop gradient
+        % 2. backprop gradient
         function grads = gradient(obj, x, t)
             
             % forward
@@ -243,7 +287,6 @@ classdef two_layer_net < handle
             end
             
             %
-
             obj.grads('W1') = obj.layer_manager.aff_layers{1}.dW;
             obj.grads('b1') = obj.layer_manager.aff_layers{1}.db;
             obj.grads('W2') = obj.layer_manager.aff_layers{2}.dW;
@@ -255,17 +298,7 @@ classdef two_layer_net < handle
         
 
         
-        %% update
-        function obj = update(obj, grads)
-           
-            % update
-            obj.params = obj.optimizer.update(obj.params, grads);
-            
-            % update internal params in each affine layer
-            obj.layer_manager.aff_layers{1}.update_params(obj.params('W1'), obj.params('b1'));
-            obj.layer_manager.aff_layers{2}.update_params(obj.params('W2'), obj.params('b2'));
-            
-        end
+
         
     end
 

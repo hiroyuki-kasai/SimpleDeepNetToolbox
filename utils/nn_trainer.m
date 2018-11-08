@@ -1,14 +1,20 @@
-classdef trainer < handle
-% This file defines trainer class
+classdef nn_trainer < handle
+% This file defines neural-network trainer class
 %
 % This file is part of SimpleDeepNetToolbox.
 %
 % Created by H.Kasai on Oct. 02, 2018
-% Modified by H.Kasai on Oct. 03, 2018
+%
+% Change log: 
+%
+%   Nov. 07, 2018 (H.Kasai)
+%       Moved optimizer from network class to this class.
+%
+%
 %
 % This class was originally ported from the python library below.
 % https://github.com/oreilly-japan/deep-learning-from-scratch.
-% However, major modification have been made for MATLAB implementation and  
+% However, major modifications have been made for MATLAB implementation and  
 % its efficient implementation.    
 
     
@@ -16,7 +22,6 @@ classdef trainer < handle
         name;
         
         network;
-        use_num_grad;
         
         verbose;
         
@@ -40,21 +45,29 @@ classdef trainer < handle
         info;
         rand_index;
         
+        %
+        optimizer;
+        opt_algorithm;
+        learning_rate;
+        
     end
     
     methods
-        function obj = trainer(network, x_train, t_train, x_test, t_test, ...
-                 max_epochs, mini_batch_size, use_num_grad, verbose)
+        function obj = nn_trainer(network, x_train, t_train, x_test, t_test, opt_alg, lrate, ...
+                 max_epochs, mini_batch_size, verbose)
              
+             
+            obj.name = 'nn_trainer';               
             obj.network = network;
             obj.verbose = verbose;
             obj.x_train = x_train;
             obj.t_train = t_train;
             obj.x_test = x_test;
             obj.t_test = t_test;
+            obj.opt_algorithm = opt_alg;
+            obj.learning_rate = lrate;            
             obj.max_epochs = max_epochs;
             obj.batch_size = mini_batch_size;
-            obj.use_num_grad = use_num_grad;
 
             obj.train_size = size(x_train, 1);
             obj.iter_num_per_epoch = max(fix(obj.train_size / mini_batch_size), 1);
@@ -65,6 +78,14 @@ classdef trainer < handle
             obj.rand_index = [];
             
             obj.dataset_dim = ndims(x_train);
+            
+            % get parameters
+            params = obj.network.get_params();            
+            
+            
+            %% generate optimizer
+            obj.optimizer = stochastic_optimizer([], params, obj.opt_algorithm, obj.learning_rate, []);              
+
 
         end
         
@@ -86,28 +107,30 @@ classdef trainer < handle
 
             start_mask = (obj.iter_per_epoch-1)*obj.batch_size + 1;
             end_mask = obj.iter_per_epoch * obj.batch_size;
-            batch_mask = obj.rand_index(start_mask:end_mask);    
+            indice = obj.rand_index(start_mask:end_mask);    
 
             if obj.dataset_dim == 2
-                x_curr_batch = obj.x_train(batch_mask,:);
-                t_curr_batch = obj.t_train(batch_mask,:);
+                x_curr_batch = obj.x_train(indice,:);
+                t_curr_batch = obj.t_train(indice,:);
             elseif obj.dataset_dim == 4
-                x_curr_batch = obj.x_train(batch_mask,:,:,:);
-                t_curr_batch = obj.t_train(batch_mask,:,:,:);   
+                x_curr_batch = obj.x_train(indice,:,:,:);
+                t_curr_batch = obj.t_train(indice,:,:,:);   
             else
-            end
-
-            % calculate gradient
-            if obj.use_num_grad
-                grad = obj.network.numerical_gradient(x_curr_batch, t_curr_batch);
-            else
-                grad = obj.network.gradient(x_curr_batch, t_curr_batch);
             end
             
+            
+            % calculate gradient
+            grads = obj.network.calculate_grads(x_curr_batch, t_curr_batch);
+            
+            % get params from network
+            params = obj.network.get_params();            
 
             % update params
-            obj.network.update(grad);
-
+            params = obj.optimizer.update(params, grads, obj.learning_rate, []);
+            
+            % set params into network
+            obj.network.set_params(params);
+            
             if obj.verbose > 0
                 if mod(iter, obj.iter_num_per_epoch) == 0
                     obj.info.epoch = [obj.info.epoch obj.current_epoch];
@@ -157,4 +180,3 @@ classdef trainer < handle
 
     end
 end
-

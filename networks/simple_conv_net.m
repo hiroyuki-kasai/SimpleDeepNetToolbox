@@ -9,11 +9,17 @@ classdef simple_conv_net < handle
 % This file is part of SimpleDeepNetToolbox.
 %
 % Created by H.Kasai on Oct. 04, 2018
-% Modified by H.Kasai on Oct. 05, 2018
+%
+% Change log: 
+%
+%   Nov. 07, 2018 (H.Kasai)
+%       Moved optimizer to trainer class.
+%       Added get_params method.
+%       Added calculate_grads method.
 %
 % This class was originally ported from the python library below.
 % https://github.com/oreilly-japan/deep-learning-from-scratch.
-% Major modification have been made for MATLAB implementation and  
+% Major modifications have been made for MATLAB implementation and  
 % its efficient implementation.
 
 
@@ -33,18 +39,18 @@ classdef simple_conv_net < handle
         % grads
         grads;
         
-        % optimizer
-        optimizer;
-        opt_algorithm;
-        learning_rate;
-
+        % else
+        use_num_grad;
+        
     end
     
     methods
-        function obj = simple_conv_net(input_dim, conv_param, hidden_size, output_size, weight_init_std, opt_alg, lrate)       
+        function obj = simple_conv_net(input_dim, conv_param, hidden_size, output_size, weight_init_std, use_num_grad)       
             
 
             obj.name = 'simple_conv_net';
+            
+            obj.use_num_grad = use_num_grad;
             
             filter_num = conv_param.filter_num;
             filter_size = conv_param.filter_size;
@@ -91,13 +97,30 @@ classdef simple_conv_net < handle
             obj.layer_manager = obj.layer_manager.add_layer('affine', obj.params('W3'), obj.params('b3'));  
             % generate softmax_with_loss layer
             obj.layer_manager = obj.layer_manager.add_last_layer('softmax');  
-            
-            
-            
-            %% generate optimizer
-            obj.optimizer = stochastic_optimizer(obj.params, opt_alg, lrate, []);
 
         end
+        
+        
+        % get params        
+        function params = get_params(obj)
+            
+            params = obj.params;
+            
+        end      
+        
+        
+        % set params
+        function obj = set_params(obj, params)
+            
+            obj.params = params;
+            
+            % deliver internal params to convolutional layer
+            obj.layer_manager.conv_layers{1}.update_params(params('W1'), params('b1')); 
+            % deliver internal params to all affine layers
+            obj.layer_manager.aff_layers{1}.update_params(params('W2'), params('b2')); 
+            obj.layer_manager.aff_layers{2}.update_params(params('W3'), params('b3')); 
+            
+        end        
         
       
         function f = loss(obj, x, t, varargin)
@@ -156,8 +179,23 @@ classdef simple_conv_net < handle
         end
         
         
+
+        %% calculate gradient
+        function grads = calculate_grads(obj, x_curr_batch, t_curr_batch)
+            
+            if obj.use_num_grad
+                obj.grads = obj.numerical_gradient(x_curr_batch, t_curr_batch);
+            else
+                obj.grads = obj.gradient(x_curr_batch, t_curr_batch);
+            end  
+            
+            grads = obj.grads;
+        end
         
-        %% numerical gradient
+        
+        
+        
+        % 1. numerical gradient
         function grads = numerical_gradient(obj, x_curr_batch, t_curr_batch)
             
             grads = [];
@@ -246,7 +284,7 @@ classdef simple_conv_net < handle
         
         
         
-        %% backprop gradient
+        % 2. backprop gradient
         function grads = gradient(obj, x, t)
             
             % calculate gradients
@@ -273,22 +311,7 @@ classdef simple_conv_net < handle
 
         end
         
-        
 
-        
-        %% update
-        function obj = update(obj, grads)
-            
-            % update
-            obj.params = obj.optimizer.update(obj.params, grads);
-            
-            % deliver internal params to convolutional layer
-            obj.layer_manager.conv_layers{1}.update_params(obj.params('W1'), obj.params('b1')); 
-            % deliver internal params to all affine layers
-            obj.layer_manager.aff_layers{1}.update_params(obj.params('W2'), obj.params('b2')); 
-            obj.layer_manager.aff_layers{2}.update_params(obj.params('W3'), obj.params('b3')); 
-            
-        end
         
     end
 

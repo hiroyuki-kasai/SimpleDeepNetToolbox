@@ -11,11 +11,17 @@ classdef multilayer_neural_net < handle
 % This file is part of SimpleDeepNetToolbox.
 %
 % Created by H.Kasai on Oct. 02, 2018
-% Modified by H.Kasai on Oct. 05, 2018
+%
+% Change log: 
+%
+%   Nov. 07, 2018 (H.Kasai)
+%       Moved optimizer to trainer class.
+%       Added get_params method.
+%       Added calculate_grads method.
 %
 % This class was originally ported from the python library below.
 % https://github.com/oreilly-japan/deep-learning-from-scratch.
-% Major modification have been made for MATLAB implementation and  
+% Major modifications have been made for MATLAB implementation and  
 % its efficient implementation.
 
 
@@ -38,11 +44,6 @@ classdef multilayer_neural_net < handle
         % grads
         grads;        
         
-        % optimizer
-        optimizer;
-        opt_algorithm;
-        learning_rate;
-
         % else
         activation_type;
         weight_init_std_type;
@@ -50,11 +51,13 @@ classdef multilayer_neural_net < handle
         use_dropout;
         dropout_ratio;
         use_batchnorm;
+        use_num_grad;
     end
     
     methods
         function obj = multilayer_neural_net(input_size, hidden_size_list, output_size, ...
-                act_type, w_init_std, w_decay_lambda, use_do, do_ratio, use_bn, opt_alg, lrate)       
+                act_type, w_init_std, w_decay_lambda, use_do, do_ratio, use_bn, use_num_grad)
+            
             
 
             obj.name = 'multilayer_neural_net';  
@@ -70,9 +73,7 @@ classdef multilayer_neural_net < handle
             obj.use_dropout = use_do;
             obj.dropout_ratio = do_ratio;
             obj.use_batchnorm = use_bn;
-            
-            obj.opt_algorithm = opt_alg;
-            obj.learning_rate = lrate;            
+            obj.use_num_grad = use_num_grad;
             
 
             
@@ -145,10 +146,37 @@ classdef multilayer_neural_net < handle
             
             
             
-            %% generate optimizer
-            obj.optimizer = stochastic_optimizer(obj.params, obj.opt_algorithm, obj.learning_rate, []);                 
-            
         end
+        
+        
+        
+        % get params        
+        function params = get_params(obj)
+            
+            params = obj.params;
+            
+        end 
+        
+        
+        % set params
+        function obj = set_params(obj, params)
+            
+            obj.params = params;
+            
+            for idx = 1 : obj.hidden_layer_num + 1
+
+                % update internal params in each affine layer
+                obj.layer_manager.aff_layers{idx}.update_params(params(['W', num2str(idx)]), params(['b', num2str(idx)]));
+                
+                if obj.use_batchnorm && idx ~= obj.hidden_layer_num + 1
+                    
+                    % update internal params in each batchnorm layer
+                    obj.layer_manager.batchnorm_layers{idx}.update_params(params(['gamma', num2str(idx)]), params(['beta', num2str(idx)]));
+                    
+                end                
+            end
+            
+        end        
         
         
 
@@ -216,9 +244,21 @@ classdef multilayer_neural_net < handle
         
         
         
+        %% calculate gradient
+        function grads = calculate_grads(obj, x_curr_batch, t_curr_batch)
+            
+            if obj.use_num_grad
+                obj.grads = obj.numerical_gradient(x_curr_batch, t_curr_batch);
+            else
+                obj.grads = obj.gradient(x_curr_batch, t_curr_batch);
+            end  
+            
+            grads = obj.grads;
+        end
         
         
-        %% numerical gradient
+        
+        % 1. numerical gradient
         function grads = numerical_gradient(obj, x_curr_batch, t_curr_batch)
             
             grads = [];
@@ -332,7 +372,7 @@ classdef multilayer_neural_net < handle
         
         
         
-        %% backprop gradient
+        % 2. backprop gradient
         function grads = gradient(obj, x, t)
             
             % forward
@@ -356,8 +396,6 @@ classdef multilayer_neural_net < handle
                 end
             end
             
-            %fprintf('W:%.16e, b:%.16e\n', norm(grads.W{1}), norm(grads.b{1}));
-            
             grads = obj.grads;
             
         end
@@ -365,26 +403,7 @@ classdef multilayer_neural_net < handle
         
 
         
-        %% update
-        function obj = update(obj, grads)
-            
-            % update
-            obj.params = obj.optimizer.update(obj.params, grads);            
-            
-            for idx = 1 : obj.hidden_layer_num + 1
 
-                % update internal params in each affine layer
-                obj.layer_manager.aff_layers{idx}.update_params(obj.params(['W', num2str(idx)]), obj.params(['b', num2str(idx)]));
-                
-                if obj.use_batchnorm && idx ~= obj.hidden_layer_num + 1
-                    
-                    % update internal params in each batchnorm layer
-                    obj.layer_manager.batchnorm_layers{idx}.update_params(obj.params(['gamma', num2str(idx)]), obj.params(['beta', num2str(idx)]));
-                    
-                end                
-            end
-            
-        end
         
     end
 
