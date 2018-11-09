@@ -194,7 +194,7 @@ TBA.
 License
 -------
 - The SimpleDeepNetToolbox is **free** and **open** source.
-- The code provided iin SGDLibrary should only be used for **academic/research purposes**.
+- The code provided in SimpleDeepNetToolbox should only be used for **academic/research purposes**.
 - This toolbox was originally ported from [python library](https://github.com/oreilly-japan/deep-learning-from-scratch). 
 
 
