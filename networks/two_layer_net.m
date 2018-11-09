@@ -42,15 +42,12 @@ classdef two_layer_net < handle
         % parameters (W, b)
         params;
         
-        % grads
-        grads;        
-        
         % data
         x_train;
         y_train;
         x_test;
         y_test; 
-        train_size;        
+        samples;        
         dataset_dim;
         
         % else
@@ -89,7 +86,7 @@ classdef two_layer_net < handle
             obj.y_test = y_test;            
             obj.hidden_size = hidden_size;
             obj.output_size = output_size;
-            obj.train_size = size(x_train, 1);
+            obj.samples = size(x_train, 1);
             obj.dataset_dim = ndims(x_train);            
 
             
@@ -97,21 +94,10 @@ classdef two_layer_net < handle
             
             %% initialize weights
             obj.params = containers.Map('KeyType','char','ValueType','any');
-            obj.grads = containers.Map('KeyType','char','ValueType','any');
-            
             obj.params('W1') = obj.weight_init_std * randn(input_size, hidden_size);
-            obj.grads('W1') = [];
-
             obj.params('b1') = zeros(1, hidden_size);
-             
-            obj.grads('b1') = [];     
-            
             obj.params('W2') = obj.weight_init_std * randn(hidden_size, output_size);
-            obj.grads('W2') = [];
-
             obj.params('b2') = zeros(1, output_size);            
-            obj.grads('b2') = []; 
-            
             
             
             %% generate layers
@@ -152,7 +138,7 @@ classdef two_layer_net < handle
         
         function f = loss(obj)
             
-            f = loss_partial(obj, 1:obj.train_size);
+            f = loss_partial(obj, 1:obj.samples);
             
         end
         
@@ -212,15 +198,16 @@ classdef two_layer_net < handle
         
         
         %% calculate gradient
-        function grads = calculate_grads(obj, indice)
+        function [grads, calc_cnt] = calculate_grads(obj, ignore_me, indice)
+            
             
             if obj.use_num_grad
-                obj.grads = obj.numerical_gradient(indice);
+                grads = obj.numerical_gradient(indice);
             else
-                obj.grads = obj.gradient(indice);
+                grads = obj.gradient(indice);
             end  
             
-            grads = obj.grads;
+            calc_cnt = length(indice); 
         end
         
         
@@ -351,12 +338,12 @@ classdef two_layer_net < handle
             end
             
             %
-            obj.grads('W1') = obj.layer_manager.aff_layers{1}.dW;
-            obj.grads('b1') = obj.layer_manager.aff_layers{1}.db;
-            obj.grads('W2') = obj.layer_manager.aff_layers{2}.dW;
-            obj.grads('b2') = obj.layer_manager.aff_layers{2}.db;           
-
-            grads = obj.grads;
+            grads = containers.Map('KeyType','char','ValueType','any');
+            grads('W1') = obj.layer_manager.aff_layers{1}.dW;
+            grads('b1') = obj.layer_manager.aff_layers{1}.db;
+            grads('W2') = obj.layer_manager.aff_layers{2}.dW;
+            grads('b2') = obj.layer_manager.aff_layers{2}.db; 
+            
         end
         
     end

@@ -21,7 +21,7 @@ classdef multilayer_neural_net < handle
 %
 %   Nov. 09, 2018 (H.Kasai)
 %       Moved data properties from nn_trainer class to this class.
-%       Moved params and grads from nn_trainer class to this class.
+%       Moved params from nn_trainer class to this class.
 %
 % This class was originally ported from the python library below.
 % https://github.com/oreilly-japan/deep-learning-from-scratch.
@@ -46,15 +46,12 @@ classdef multilayer_neural_net < handle
         params;
         %param_keys;            
         
-        % grads
-        grads;         
-        
         % data
         x_train;
         y_train;
         x_test;
         y_test; 
-        train_size;        
+        samples;        
         dataset_dim;        
         
         % else
@@ -82,7 +79,7 @@ classdef multilayer_neural_net < handle
             obj.hidden_size_list = hidden_size_list;
             obj.output_size = output_size;
             obj.hidden_layer_num = length(hidden_size_list);
-            obj.train_size = size(x_train, 1);
+            obj.samples = size(x_train, 1);
             obj.dataset_dim = ndims(x_train);               
             
             obj.activation_type = act_type;
@@ -98,7 +95,6 @@ classdef multilayer_neural_net < handle
             
             %% initialize weights
             obj.params = containers.Map('KeyType','char','ValueType','any');
-            obj.grads = containers.Map('KeyType','char','ValueType','any');
             all_size_list = [input_size hidden_size_list output_size];
             all_size_list_num = length(all_size_list);
             
@@ -116,12 +112,10 @@ classdef multilayer_neural_net < handle
                 obj.params(['W', num2str(idx)]) = scale * randn(all_size_list(idx), all_size_list(idx+1));
                 param_num = param_num + 1;
                 %obj.param_keys{param_num} = ['W', num2str(idx)];
-                obj.grads(['W', num2str(idx)]) = [];
                 
                 obj.params(['b', num2str(idx)]) = zeros(1, all_size_list(idx+1));
                 param_num = param_num + 1;
                 %obj.param_keys{param_num} = ['b', num2str(idx)];                
-                obj.grads(['b', num2str(idx)]) = [];
 
             end
             
@@ -207,7 +201,7 @@ classdef multilayer_neural_net < handle
                 train_flag = varargin{1};
             end               
             
-            f = loss_partial(obj, 1:obj.train_size, train_flag);
+            f = loss_partial(obj, 1:obj.samples, train_flag);
             
         end
         
@@ -294,15 +288,15 @@ classdef multilayer_neural_net < handle
         
         
         %% calculate gradient
-        function grads = calculate_grads(obj, indice)
+        function [grads, calc_cnt] = calculate_grads(obj, ignore_me, indice)
             
             if obj.use_num_grad
-                obj.grads = obj.numerical_gradient(indice);
+                grads = obj.numerical_gradient(indice);
             else
-                obj.grads = obj.gradient(indice);
+                grads = obj.gradient(indice);
             end  
             
-            grads = obj.grads;
+            calc_cnt = length(indice);
         end        
         
         
@@ -445,17 +439,16 @@ classdef multilayer_neural_net < handle
             end
             
             % calculate gradients
+            grads = containers.Map('KeyType','char','ValueType','any');
             for idx = 1 : obj.hidden_layer_num + 1
-                obj.grads(['W', num2str(idx)]) = obj.layer_manager.aff_layers{idx}.dW + obj.weight_decay_lambda * obj.layer_manager.aff_layers{idx}.W;
-                obj.grads(['b', num2str(idx)]) = obj.layer_manager.aff_layers{idx}.db;
+                grads(['W', num2str(idx)]) = obj.layer_manager.aff_layers{idx}.dW + obj.weight_decay_lambda * obj.layer_manager.aff_layers{idx}.W;
+                grads(['b', num2str(idx)]) = obj.layer_manager.aff_layers{idx}.db;
                 
                 if obj.use_batchnorm && idx ~= obj.hidden_layer_num + 1
-                    obj.grads(['gamma', num2str(idx)]) = obj.layer_manager.batchnorm_layers{idx}.dgamma;
-                    obj.grads(['beta', num2str(idx)]) = obj.layer_manager.batchnorm_layers{idx}.dbeta;                    
+                    grads(['gamma', num2str(idx)]) = obj.layer_manager.batchnorm_layers{idx}.dgamma;
+                    grads(['beta', num2str(idx)]) = obj.layer_manager.batchnorm_layers{idx}.dbeta;                    
                 end
             end
-            
-            grads = obj.grads;
             
         end
         

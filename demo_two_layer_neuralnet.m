@@ -17,8 +17,8 @@ network = two_layer_net(x_train, t_train, x_test, t_test, 784, 50, 10, []);
 % set trainer
 %options.opt_alg = 'AdaGrad';
 %options.step_init = 0.1;
-%options.verbose = 1;
-%options.max_epoch = 10;
+%options.verbose = 2;
+%options.max_epoch = 20;
 %trainer = nn_trainer(network, options);
 trainer = nn_trainer(network);
 

@@ -1,4 +1,4 @@
-clc;
+%clc;
 clear;
 close all;
 
@@ -57,12 +57,13 @@ network = multilayer_neural_net(x_train, t_train, x_test, t_test, dimension, [10
 
 
 % set trainer
-options.opt_alg = 'AdaGrad';
-%options.opt_alg = 'SGD';
+%options.opt_alg = 'AdaGrad';
+options.opt_alg = 'SGD';
 %options.opt_alg = 'Momuentum';
+%options.opt_alg = 'SVRG';
 options.max_epoch = 30;
 options.step_init = learning_rate;
-options.verbose = 1;
+options.verbose = 2;
 options.batch_size = batch_size;
 trainer = nn_trainer(network, options);
 

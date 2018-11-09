@@ -30,7 +30,7 @@ classdef nn_trainer < handle
         optimizer; 
         options;
         
-        train_size;
+        samples;
         iter_num_per_epoch;
         iter_per_epoch;
         current_epoch;
@@ -51,7 +51,7 @@ classdef nn_trainer < handle
              
             obj.name = 'nn_trainer';               
             obj.network = network;
-            obj.train_size = obj.network.train_size;
+            obj.samples = obj.network.samples;
 
             
             % set local options 
@@ -62,13 +62,13 @@ classdef nn_trainer < handle
             obj.options = mergeOptions(obj.options, in_options);  
             
             
-            obj.iter_num_per_epoch = max(fix(obj.train_size / obj.options.batch_size), 1);
+            obj.iter_num_per_epoch = max(fix(obj.samples / obj.options.batch_size), 1);
             obj.max_iter = obj.options.max_epoch * obj.iter_num_per_epoch;
             
             
             % generate optimizer
             params = obj.network.get_params();
-            obj.optimizer = stochastic_optimizer([], params, obj.options.opt_alg, obj.options.step_init, []);              
+            obj.optimizer = stochastic_optimizer(obj.network, params, obj.options.opt_alg, obj.options.step_init, []);              
 
 
         end
@@ -79,13 +79,20 @@ classdef nn_trainer < handle
             % process every epoch
             if mod(iter, obj.iter_num_per_epoch) == 1
                 if obj.options.permute_on
-                    obj.rand_index = randperm(obj.train_size);
+                    obj.rand_index = randperm(obj.samples);
                 else
-                    obj.rand_index = 1:obj.train_size;
+                    obj.rand_index = 1:obj.samples;
                 end 
 
                 obj.iter_per_epoch = 1;
                 obj.current_epoch = obj.current_epoch + 1;
+                
+                % preprocess for epoch
+                if ~isempty(obj.optimizer.preprocess)
+                    params = obj.network.get_params(); 
+                    [~] = obj.optimizer.preprocess(params);  
+                end   
+                
             else
                 obj.iter_per_epoch = obj.iter_per_epoch + 1;
             end
@@ -96,14 +103,12 @@ classdef nn_trainer < handle
             end_mask = obj.iter_per_epoch * obj.options.batch_size;
             indice = obj.rand_index(start_mask:end_mask);    
 
-            % calculate gradient
-            grads = obj.network.calculate_grads(indice);
-            
             % get/update/set params from network
             params = obj.network.get_params();            
-            params = obj.optimizer.update(params, grads, obj.options.step_init, []);
+            params = obj.optimizer.update(params, obj.options.step_init, indice);
             obj.network.set_params(params);
             
+            % store and display infos
             if mod(iter, obj.iter_num_per_epoch) == 0
                 
                 % store infos
@@ -152,7 +157,6 @@ classdef nn_trainer < handle
             test_acc = obj.network.accuracy('test');
             obj.info.train_acc = train_acc;
             obj.info.test_acc = test_acc; 
-            
             
             
             % display

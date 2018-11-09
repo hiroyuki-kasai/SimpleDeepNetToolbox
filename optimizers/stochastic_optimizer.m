@@ -36,6 +36,7 @@ classdef stochastic_optimizer < handle
         % SVRG
         full_grads;
         params0;
+
     end
     
     methods
@@ -87,7 +88,8 @@ classdef stochastic_optimizer < handle
                 
                 obj.update = @obj.svrg_update;
                 obj.preprocess = @obj.svrg_preprocess;
-                obj.disp_name = 'SVRG';                
+                obj.disp_name = 'SVRG'; 
+                
             end
         end
         
@@ -96,13 +98,12 @@ classdef stochastic_optimizer < handle
         
         
         % SGD
-        function [params_out, grads, calc_cnt]  = sgd_update(obj, params_in, grads, step, indice)
+        function [params_out, grads, calc_cnt]  = sgd_update(obj, params_in, step, indice)
             
             calc_cnt = 0;      
-            if isempty(grads)
-                [grads, cnt] = obj.problem.calculate_grads(params_in, indice);
-                calc_cnt = calc_cnt + cnt;
-            end
+            [grads, cnt] = obj.problem.calculate_grads(params_in, indice);
+            calc_cnt = calc_cnt + cnt;
+
             
             params_out = containers.Map('KeyType','char','ValueType','any');
             for i = 1 : obj.param_num
@@ -116,13 +117,11 @@ classdef stochastic_optimizer < handle
         
         
         % Momentum
-        function [params_out, grads, calc_cnt]  = momentum_update(obj, params_in, grads, step, indice)
+        function [params_out, grads, calc_cnt]  = momentum_update(obj, params_in, step, indice)
 
             calc_cnt = 0;
-            if isempty(grads)
-                [grads, cnt] = obj.problem.calculate_grads(params_in, indice);
-                calc_cnt = calc_cnt + cnt;
-            end
+            [grads, cnt] = obj.problem.calculate_grads(params_in, indice);
+            calc_cnt = calc_cnt + cnt;
             
             params_out = containers.Map('KeyType','char','ValueType','any');
             for i = 1 : obj.param_num
@@ -137,13 +136,12 @@ classdef stochastic_optimizer < handle
         
         
         % Adagrad
-        function [params_out, grads, calc_cnt] = adagrad_update(obj, params_in, grads, step, indice)
+        function [params_out, grads, calc_cnt] = adagrad_update(obj, params_in, step, indice)
             
             calc_cnt = 0;
-            if isempty(grads)
-                [grads, cnt] = obj.problem.calculate_grads(params_in, indice);
-                calc_cnt = calc_cnt + cnt;
-            end
+            [grads, cnt] = obj.problem.calculate_grads(params_in, indice);
+            calc_cnt = calc_cnt + cnt;
+
             
             params_out = containers.Map('KeyType','char','ValueType','any');
             for i = 1 : obj.param_num
@@ -158,17 +156,21 @@ classdef stochastic_optimizer < handle
         
         
         % SVRG
-        function [params_out, grads_out, calc_cnt] = svrg_update(obj, params_in, grads, step, indice)
+        function [params_out, grads_out, calc_cnt] = svrg_update(obj, params_in, step, indice)
             
             calc_cnt = 0;
-            if isempty(grads)
-                [grads, cnt] = obj.problem.calculate_grads(params_in, indice);
-                calc_cnt = calc_cnt + cnt;
-            end
-            
-            [grads0, cnt] = obj.problem.calculate_grads(obj.params0, indice);
+
+            % calculate gradient at current params
+            [grads, cnt] = obj.problem.calculate_grads(params_in, indice);
             calc_cnt = calc_cnt + cnt;
+
+            % calculate gradient at params0 (outer loop edge point)
+            obj.problem.set_params(obj.params0);    % tell params0 to network 
+            [grads0, cnt] = obj.problem.calculate_grads(obj.params0, indice);
+            obj.problem.set_params(params_in);      % restore current params (params_in) to network 
+            calc_cnt = calc_cnt + cnt;            
             
+            % calculate modified stochastic gradient
             params_out = containers.Map('KeyType','char','ValueType','any');
             grads_out = containers.Map('KeyType','char','ValueType','any');
             for i = 1 : obj.param_num
@@ -185,9 +187,14 @@ classdef stochastic_optimizer < handle
         function [full_grads, calc_cnt] = svrg_preprocess(obj, params_in)
             
             calc_cnt = 0;
+            
+            % store the loop edge point
+            obj.params0 = params_in;
+            
+            % calculate full gradient at params_in (outer loop edge point)
         	[obj.full_grads, cnt] = obj.problem.calculate_grads(params_in, 1:obj.problem.samples);
             calc_cnt = calc_cnt + cnt;
-            obj.params0 = params_in;
+            
             full_grads = obj.full_grads;
             
         end         

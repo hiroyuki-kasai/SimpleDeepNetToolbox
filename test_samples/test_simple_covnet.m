@@ -4,9 +4,6 @@ close all;
 
 rng('default');
 
-max_epoch = 30;
-verbose = 1;
-w_decay_lambda = 0.01; % l2-norm regularization. 0.1?? (0 ... 1)
 
 
 if 0
@@ -49,6 +46,7 @@ conv_param.stride = 1;
 hidden_size = 100;
 output_size = class_num;
 use_num_grad = false;
+w_decay_lambda = 0.01; % l2-norm regularization. 0.1?? (0 ... 1)
 network = simple_conv_net(x_train, t_train, x_test, t_test, input_dim, conv_param, hidden_size, output_size, w_decay_lambda, use_num_grad);
 
 
@@ -56,9 +54,10 @@ network = simple_conv_net(x_train, t_train, x_test, t_test, input_dim, conv_para
 options.opt_alg = 'AdaGrad';
 %options.opt_alg = 'SGD';
 %options.opt_alg = 'Momuentum';
-options.max_epoch = 30;
+%options.opt_alg = 'SVRG';
+options.max_epoch = 10;
 options.step_init = learning_rate;
-options.verbose = 1;
+options.verbose = 2;
 options.batch_size = batch_size;
 trainer = nn_trainer(network, options);
 

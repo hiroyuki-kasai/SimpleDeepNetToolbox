@@ -4,12 +4,6 @@ close all;
 
 rng('default')
 
-% set parameters
-max_epoch = 30;
-batch_size = 100;
-opt_alg = 'AdaGrad'; % 'SGD', 'AdaGrad'
-learning_rate = 0.1;
-
 
 % load dateaset
 dataset_dir = './datasets/';
@@ -29,9 +23,12 @@ network = multilayer_neural_net(x_train, t_train, x_test, t_test, dimension, [10
 
 % set trainer
 options.opt_alg = 'AdaGrad';
-options.max_epoch = 1000;
+%options.opt_alg = 'SVRG';
+%options.opt_alg = 'SGD';
+%options.opt_alg = 'SVRG';
+options.max_epoch = 20;
 options.step_init = 0.1;
-options.verbose = 1;
+options.verbose = 2;
 options.batch_size = 100;
 trainer = nn_trainer(network, options);
 

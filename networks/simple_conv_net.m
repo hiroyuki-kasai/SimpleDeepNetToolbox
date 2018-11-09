@@ -19,7 +19,7 @@ classdef simple_conv_net < handle
 %
 %   Nov. 09, 2018 (H.Kasai)
 %       Moved data properties from nn_trainer class to this class.
-%       Moved params and grads from nn_trainer class to this class.
+%       Moved params from nn_trainer class to this class.
 %
 % This class was originally ported from the python library below.
 % https://github.com/oreilly-japan/deep-learning-from-scratch.
@@ -41,15 +41,12 @@ classdef simple_conv_net < handle
         % parameters (W, b)
         params;
         
-        % grads
-        grads;        
-        
         % data
         x_train;
         y_train;
         x_test;
         y_test; 
-        train_size;        
+        samples;        
         dataset_dim;             
         
         % else
@@ -66,7 +63,7 @@ classdef simple_conv_net < handle
             obj.y_train = y_train;
             obj.x_test = x_test;
             obj.y_test = y_test;  
-            obj.train_size = size(x_train, 1);
+            obj.samples = size(x_train, 1);
             obj.dataset_dim = ndims(x_train);              
             
             obj.use_num_grad = use_num_grad;
@@ -90,14 +87,6 @@ classdef simple_conv_net < handle
             obj.params('W3') = weight_init_std * randn(hidden_size, output_size);
             obj.params('b3') = zeros(1, output_size);
             
-            obj.grads = containers.Map('KeyType', 'char','ValueType', 'any');
-            obj.grads('W1') = [];
-            obj.grads('b1') = [];
-            obj.grads('W2') = [];
-            obj.grads('b2') = [];
-            obj.grads('W3') = [];
-            obj.grads('b3') = [];
-
 
             
             %% generate layers
@@ -150,7 +139,7 @@ classdef simple_conv_net < handle
                 train_flag = varargin{1};
             end               
             
-            f = loss_partial(obj, 1:obj.train_size, train_flag);
+            f = loss_partial(obj, 1:obj.samples, train_flag);
             
         end        
         
@@ -233,15 +222,16 @@ classdef simple_conv_net < handle
         
 
         %% calculate gradient
-        function grads = calculate_grads(obj, indice)
+        function [grads, calc_cnt] = calculate_grads(obj, ignore_me, indice)
             
             if obj.use_num_grad
-                obj.grads = obj.numerical_gradient(indice);
+                grads = obj.numerical_gradient(indice);
             else
-                obj.grads = obj.gradient(indice);
+                grads = obj.gradient(indice);
             end  
             
-            grads = obj.grads;
+            calc_cnt = length(indice); 
+            
         end     
         
         
@@ -348,8 +338,6 @@ classdef simple_conv_net < handle
         % 2. backprop gradient
         function grads = gradient(obj, indice)
             
-            % calculate gradients
-            
             % forward
             loss_partial(obj, indice, true);                 
             
@@ -361,15 +349,14 @@ classdef simple_conv_net < handle
             end
             
             % calculate gradients
-            obj.grads('W1') = obj.layer_manager.conv_layers{1}.dW;
-            obj.grads('b1') = obj.layer_manager.conv_layers{1}.db;
-            obj.grads('W2') = obj.layer_manager.aff_layers{1}.dW;
-            obj.grads('b2') = obj.layer_manager.aff_layers{1}.db;
-            obj.grads('W3') = obj.layer_manager.aff_layers{2}.dW;
-            obj.grads('b3') = obj.layer_manager.aff_layers{2}.db; 
+            grads = containers.Map('KeyType','char','ValueType','any');
+            grads('W1') = obj.layer_manager.conv_layers{1}.dW;
+            grads('b1') = obj.layer_manager.conv_layers{1}.db;
+            grads('W2') = obj.layer_manager.aff_layers{1}.dW;
+            grads('b2') = obj.layer_manager.aff_layers{1}.db;
+            grads('W3') = obj.layer_manager.aff_layers{2}.dW;
+            grads('b3') = obj.layer_manager.aff_layers{2}.db; 
             
-            grads = obj.grads;
-
         end
         
     end
