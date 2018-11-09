@@ -10,6 +10,10 @@ classdef nn_trainer < handle
 %   Nov. 07, 2018 (H.Kasai)
 %       Moved optimizer from network class to this class.
 %
+%   Nov. 09, 2018 (H.Kasai)
+%       Moved data properties to network class.
+%       Moved params and grads to network class.
+%
 %
 %
 % This class was originally ported from the python library below.
@@ -19,72 +23,52 @@ classdef nn_trainer < handle
 
     
     properties
+
         name;
         
         network;
+        optimizer; 
+        options;
         
-        verbose;
-        
-        %
-        x_train;
-        t_train;
-        x_test;
-        t_test;
-        dataset_dim;
-        
-        %
         train_size;
-        max_epochs;
-        batch_size;
         iter_num_per_epoch;
         iter_per_epoch;
         current_epoch;
         max_iter;
-        
-        %
         info;
         rand_index;
-        
-        %
-        optimizer;
-        opt_algorithm;
-        learning_rate;
         
     end
     
     methods
-        function obj = nn_trainer(network, x_train, t_train, x_test, t_test, opt_alg, lrate, ...
-                 max_epochs, mini_batch_size, verbose)
-             
+        function obj = nn_trainer(network, varargin)  
+            
+            if nargin < 2
+                in_options = [];
+            else
+                in_options = varargin{1};
+            end              
              
             obj.name = 'nn_trainer';               
             obj.network = network;
-            obj.verbose = verbose;
-            obj.x_train = x_train;
-            obj.t_train = t_train;
-            obj.x_test = x_test;
-            obj.t_test = t_test;
-            obj.opt_algorithm = opt_alg;
-            obj.learning_rate = lrate;            
-            obj.max_epochs = max_epochs;
-            obj.batch_size = mini_batch_size;
+            obj.train_size = obj.network.train_size;
 
-            obj.train_size = size(x_train, 1);
-            obj.iter_num_per_epoch = max(fix(obj.train_size / mini_batch_size), 1);
-            obj.max_iter = max_epochs * obj.iter_num_per_epoch;
-            obj.current_epoch = 0;
+            
+            % set local options 
+            local_options = [];
 
-            obj.info = [];
-            obj.rand_index = [];
-            
-            obj.dataset_dim = ndims(x_train);
-            
-            % get parameters
-            params = obj.network.get_params();            
+            % merge options
+            obj.options = mergeOptions(get_default_trainer_options(), local_options);   
+            obj.options = mergeOptions(obj.options, in_options);  
             
             
-            %% generate optimizer
-            obj.optimizer = stochastic_optimizer([], params, obj.opt_algorithm, obj.learning_rate, []);              
+            obj.iter_num_per_epoch = max(fix(obj.train_size / obj.options.batch_size), 1);
+            obj.max_iter = obj.options.max_epoch * obj.iter_num_per_epoch;
+            
+            
+            % generate optimizer
+            params = obj.network.get_params();
+            obj.optimizer = stochastic_optimizer([], params, obj.options.opt_alg, obj.options.step_init, []);              
 
 
         end
@@ -92,8 +76,9 @@ classdef nn_trainer < handle
         
         function [] = train_step(obj, iter)
             
+            % process every epoch
             if mod(iter, obj.iter_num_per_epoch) == 1
-                if 1
+                if obj.options.permute_on
                     obj.rand_index = randperm(obj.train_size);
                 else
                     obj.rand_index = 1:obj.train_size;
@@ -105,74 +90,91 @@ classdef nn_trainer < handle
                 obj.iter_per_epoch = obj.iter_per_epoch + 1;
             end
 
-            start_mask = (obj.iter_per_epoch-1)*obj.batch_size + 1;
-            end_mask = obj.iter_per_epoch * obj.batch_size;
+            
+            % determine sampe indice
+            start_mask = (obj.iter_per_epoch-1)*obj.options.batch_size + 1;
+            end_mask = obj.iter_per_epoch * obj.options.batch_size;
             indice = obj.rand_index(start_mask:end_mask);    
 
-            if obj.dataset_dim == 2
-                x_curr_batch = obj.x_train(indice,:);
-                t_curr_batch = obj.t_train(indice,:);
-            elseif obj.dataset_dim == 4
-                x_curr_batch = obj.x_train(indice,:,:,:);
-                t_curr_batch = obj.t_train(indice,:,:,:);   
-            else
-            end
-            
-            
             % calculate gradient
-            grads = obj.network.calculate_grads(x_curr_batch, t_curr_batch);
+            grads = obj.network.calculate_grads(indice);
             
-            % get params from network
+            % get/update/set params from network
             params = obj.network.get_params();            
-
-            % update params
-            params = obj.optimizer.update(params, grads, obj.learning_rate, []);
-            
-            % set params into network
+            params = obj.optimizer.update(params, grads, obj.options.step_init, []);
             obj.network.set_params(params);
             
-            if obj.verbose > 0
-                if mod(iter, obj.iter_num_per_epoch) == 0
-                    obj.info.epoch = [obj.info.epoch obj.current_epoch];
+            if mod(iter, obj.iter_num_per_epoch) == 0
+                
+                % store infos
+                obj.info.epoch = [obj.info.epoch obj.current_epoch];
 
-                    % calculate loss
-                    loss = obj.network.loss(obj.x_train, obj.t_train);
-                    fprintf('# Epoch: %03d (iter:%05d): cost = %.10e, ', obj.current_epoch, iter, loss);
-                    obj.info.cost = [obj.info.cost loss];
+                % calculate loss
+                loss = obj.network.loss();
+                obj.info.cost = [obj.info.cost loss];
 
-                    % calcualte accuracy
-                    train_acc = obj.network.accuracy(obj.x_train, obj.t_train);
-                    test_acc = obj.network.accuracy(obj.x_test, obj.t_test);
-                    fprintf('accuracy (train, test) = (%5.4f, %5.4f)\n', train_acc, test_acc);
-                    obj.info.train_acc = [obj.info.train_acc train_acc];
-                    obj.info.test_acc = [obj.info.test_acc test_acc];
-                end  
-            end
+                % calcualte accuracy
+                train_acc = obj.network.accuracy('train');
+                test_acc = obj.network.accuracy('test');
+                obj.info.train_acc = [obj.info.train_acc train_acc];
+                obj.info.test_acc = [obj.info.test_acc test_acc];
+                
+                % display
+                if obj.options.verbose > 0
+                    if obj.options.verbose > 1
+                        fprintf('# Epoch: %03d (iter:%05d): cost = %.10e, ', obj.current_epoch, iter, loss); 
+                        fprintf('accuracy (train, test) = (%5.4f, %5.4f)\n', train_acc, test_acc);
+                    else
+                        fprintf('.');
+                    end
+                end
+            end  
 
         end
         
         
         function info = train(obj)
             
-            if obj.verbose > 0
-                obj.info.epoch = 0;
-                
-                % calculate loss
-                loss = obj.network.loss(obj.x_train, obj.t_train);
-                fprintf('# Epoch: 000 (iter:00000): cost = %.10e, ', loss);
-                obj.info.cost = loss;
-
-                % calcualte accuracy
-                train_acc = obj.network.accuracy(obj.x_train, obj.t_train);
-                test_acc = obj.network.accuracy(obj.x_test, obj.t_test);
-                fprintf('accuracy (train, test) = (%5.4f, %5.4f)\n', train_acc, test_acc);
-                obj.info.train_acc = train_acc;
-                obj.info.test_acc = test_acc;                
-            end
+            % initialize
+            obj.current_epoch = 0;
+            obj.info = [];
+            obj.rand_index = [];               
             
+            % store first infos
+            obj.info.epoch = 0;
+
+            % calculate loss
+            loss = obj.network.loss();
+            obj.info.cost = loss;
+
+            % calcualte accuracy
+            train_acc = obj.network.accuracy('train');
+            test_acc = obj.network.accuracy('test');
+            obj.info.train_acc = train_acc;
+            obj.info.test_acc = test_acc; 
+            
+            
+            
+            % display
+            if obj.options.verbose > 0 
+                fprintf('### start %s (opt:%s, max_epoch:%d)\n', obj.network.name, obj.options.opt_alg, obj.options.max_epoch);
+                if obj.options.verbose > 1
+                    fprintf('# Epoch: 000 (iter:00000): cost = %.10e, ', loss);
+                    fprintf('accuracy (train, test) = (%5.4f, %5.4f)\n', train_acc, test_acc);            
+                end
+            end
+
+
+            % main loop
             for iter = 1 : obj.max_iter
                 obj.train_step(iter);
             end
+            
+            
+            % display
+            if obj.options.verbose > 0 
+                fprintf('\n### end\n');
+            end            
             
             info = obj.info;
         end

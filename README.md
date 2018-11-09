@@ -3,9 +3,9 @@
 
 Authors: [Hiroyuki Kasai](http://kasai.kasailab.com/)
 
-Last page update: November, 07, 2018
+Last page update: November, 09, 2018
 
-Latest library version: 1.0.1 (see Release notes for more info.)
+Latest library version: 1.0.2 (see Release notes for more info.)
 
 <br />
 
@@ -103,10 +103,11 @@ Just execute `demo_two_layer_neuralnet` for the simplest demonstration of this p
     load_dataset('mnist', './datasets/',  inf, inf, false);
 
 %% set network
-network = two_layer_net(784, 50, 10, []);
+network = two_layer_net(x_train, t_train, x_test, t_test, 784, 50, 10, []);
 
 %% set trainer
-trainer = nn_trainer(network, x_train, t_train, x_test, t_test, 'AdaGrad', 0.1, 50, 100, 1);
+trainer = nn_trainer(network);
+
 
 %% train
 info = trainer.train(); 
@@ -138,21 +139,20 @@ The output include train set and test set, and related other data.
 
 **Step 2: Set network**
 
-The next step defines the network architecture. This example uses a two layer neural network with the input size 784, the hidden layer size 50, and the output layer size 10. 
+The next step defines the network architecture. This example uses a two layer neural network with the input size 784, the hidden layer size 50, and the output layer size 10. Datasets are also delivered to this class.
 
 ```Matlab
 %% set network
-network = two_layer_net(784, 50, 10, []);
+network = two_layer_net(x_train, t_train, x_test, t_test, 784, 50, 10, []);
 ```
 
 **Step 3: Set trainer**
 
-You also set the network to be used. The solver algorithm and its step size, which are 'AdaGrad' and 0.1 in this example, respectively, are also defined. 
-In this example, the batchsize is set to 100 and the maximum number of epoch is set to 50.  
+You also set the network to be used. Some options for training could be configured using the second argument, which is not used in this example, though. 
 
 ```Matlab
 %% set trainer
-trainer = nn_trainer(network, x_train, t_train, x_test, t_test, 'AdaGrad', 0.1, 50, 100, 1);
+trainer = nn_trainer(network);
 ```
 
 **Step 4: Perform trainer**
@@ -214,6 +214,8 @@ If you have any problems or questions, please contact the author: [Hiroyuki Kasa
 
 Release notes
 --------------
+* Version 1.0.2 (Nov. 09, 2018)
+    - Some class structures are re-configured.
 * Version 1.0.1 (Nov. 07, 2018)
     - Some class structures are re-configured.
 * Version 1.0.0 (Oct. 08, 2018)

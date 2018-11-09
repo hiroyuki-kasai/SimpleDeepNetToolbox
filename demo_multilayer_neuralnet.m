@@ -1,4 +1,4 @@
-%clc;
+clc;
 clear;
 close all;
 
@@ -24,11 +24,16 @@ dataset_name = 'mnist';
 
 
 % set network
-network = multilayer_neural_net(dimension, [100 80], class_num, 'relu', 'relu', 0.01, 1, 0.5, 0, 0);
+network = multilayer_neural_net(x_train, t_train, x_test, t_test, dimension, [100 80], class_num, 'relu', 'relu', 0.01, 1, 0.5, 0, 0);
 
 
 % set trainer
-trainer = nn_trainer(network, x_train, t_train, x_test, t_test, opt_alg, learning_rate, max_epoch, batch_size, 1);
+options.opt_alg = 'AdaGrad';
+options.max_epoch = 1000;
+options.step_init = 0.1;
+options.verbose = 1;
+options.batch_size = 100;
+trainer = nn_trainer(network, options);
 
 
 % train

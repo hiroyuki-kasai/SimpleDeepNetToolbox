@@ -17,6 +17,10 @@ classdef simple_conv_net < handle
 %       Added get_params method.
 %       Added calculate_grads method.
 %
+%   Nov. 09, 2018 (H.Kasai)
+%       Moved data properties from nn_trainer class to this class.
+%       Moved params and grads from nn_trainer class to this class.
+%
 % This class was originally ported from the python library below.
 % https://github.com/oreilly-japan/deep-learning-from-scratch.
 % Major modifications have been made for MATLAB implementation and  
@@ -24,20 +28,29 @@ classdef simple_conv_net < handle
 
 
     properties
+        
         name; 
         
-        % size
+        % layers
+        layer_manager; 
+        
+        % size        
         hidden_size_list;
-        output_size;        
+        output_size;             
         
         % parameters (W, b)
         params;
         
-        % layers
-        layer_manager;
-        
         % grads
-        grads;
+        grads;        
+        
+        % data
+        x_train;
+        y_train;
+        x_test;
+        y_test; 
+        train_size;        
+        dataset_dim;             
         
         % else
         use_num_grad;
@@ -45,10 +58,16 @@ classdef simple_conv_net < handle
     end
     
     methods
-        function obj = simple_conv_net(input_dim, conv_param, hidden_size, output_size, weight_init_std, use_num_grad)       
+        function obj = simple_conv_net(x_train, y_train, x_test, y_test, input_dim, conv_param, hidden_size, output_size, weight_init_std, use_num_grad)       
             
 
             obj.name = 'simple_conv_net';
+            obj.x_train = x_train;
+            obj.y_train = y_train;
+            obj.x_test = x_test;
+            obj.y_test = y_test;  
+            obj.train_size = size(x_train, 1);
+            obj.dataset_dim = ndims(x_train);              
             
             obj.use_num_grad = use_num_grad;
             
@@ -123,32 +142,55 @@ classdef simple_conv_net < handle
         end        
         
       
-        function f = loss(obj, x, t, varargin)
+        function f = loss(obj, varargin)
             
-            if nargin < 4
-                train_flg = false;
+            if nargin < 2
+                train_flag = false;
             else
-                train_flg = varargin{1};
-            end             
+                train_flag = varargin{1};
+            end               
             
-            y = obj.predict(x, train_flg);
-            f = obj.layer_manager.last_layer.forward(y, t);
+            f = loss_partial(obj, 1:obj.train_size, train_flag);
+            
+        end        
+        
+        
+        function f = loss_partial(obj, indice, varargin)            
+            
+            if nargin < 3
+                train_flag = false;
+            else
+                train_flag = varargin{1};
+            end      
+            
+            if obj.dataset_dim == 2
+                x_curr_batch = obj.x_train(indice,:);
+                y_curr_batch = obj.y_train(indice,:);
+            elseif obj.dataset_dim == 4
+                x_curr_batch = obj.x_train(indice,:,:,:);
+                y_curr_batch = obj.y_train(indice,:,:,:);   
+            else
+            end              
+            
+            y = obj.predict(x_curr_batch, train_flag);
+            f = obj.layer_manager.last_layer.forward(y, y_curr_batch);
             
         end
+                
         
         
         
         function y = predict(obj, x, varargin)
             
             if nargin < 3
-                train_flg = false;
+                train_flag = false;
             else
-                train_flg = varargin{1};
+                train_flag = varargin{1};
             end              
             
             for idx = 1 : obj.layer_manager.total_num
                 if strcmpi(obj.layer_manager.layers{idx}.name, 'dropout') || strcmpi(obj.layer_manager.layers{idx}.name, 'batch_normalization')
-                    x = obj.layer_manager.layers{idx}.forward(x, train_flg);
+                    x = obj.layer_manager.layers{idx}.forward(x, train_flag);
                 else
                     x = obj.layer_manager.layers{idx}.forward(x);
                 end
@@ -160,17 +202,25 @@ classdef simple_conv_net < handle
         
         
         
-        function accuracy = accuracy(obj, x, t, varargin)
+        function accuracy = accuracy(obj, varargin)
             
-            if nargin < 4
-                train_flg = false;
+            if nargin < 2
+                train_flag = false;
             else
-                train_flg = varargin{1};
-            end              
+                train_flag = varargin{1};
+            end 
+            
+            if strcmp(train_flag, 'train')
+                x = obj.x_train;
+                t = obj.y_train;
+            else
+                x = obj.x_test;
+                t = obj.y_test;                
+            end               
             
             batch_size = size(x, 1);
 
-            y = obj.predict(x, train_flg);
+            y = obj.predict(x, false);
             [~, y] = max(y, [], 2);
             [~, t] = max(t, [], 2);
             
@@ -179,29 +229,31 @@ classdef simple_conv_net < handle
         end
         
         
+        
+        
 
         %% calculate gradient
-        function grads = calculate_grads(obj, x_curr_batch, t_curr_batch)
+        function grads = calculate_grads(obj, indice)
             
             if obj.use_num_grad
-                obj.grads = obj.numerical_gradient(x_curr_batch, t_curr_batch);
+                obj.grads = obj.numerical_gradient(indice);
             else
-                obj.grads = obj.gradient(x_curr_batch, t_curr_batch);
+                obj.grads = obj.gradient(indice);
             end  
             
             grads = obj.grads;
-        end
+        end     
         
         
         
         
         % 1. numerical gradient
-        function grads = numerical_gradient(obj, x_curr_batch, t_curr_batch)
+        function grads = numerical_gradient(obj, indice)
             
             grads = [];
             for idx = 1 : 3
-                grads.W{idx} = obj.calc_numerical_gradient(obj.params.W{idx}, 'W', idx, x_curr_batch, t_curr_batch);
-                grads.b{idx} = obj.calc_numerical_gradient(obj.params.b{idx}, 'b', idx, x_curr_batch, t_curr_batch); 
+                grads.W{idx} = obj.calc_numerical_gradient(obj.params.W{idx}, 'W', idx, indice);
+                grads.b{idx} = obj.calc_numerical_gradient(obj.params.b{idx}, 'b', idx, indice); 
             end    
             
             %fprintf('W:%.16e, b:%.16e\n', norm(grads.W{1}), norm(grads.b{1}));            
@@ -209,9 +261,18 @@ classdef simple_conv_net < handle
         end
         
         
-        function grad = calc_numerical_gradient(obj, x, id, idx, x_curr_batch, t_curr_batch)
+        function grad = calc_numerical_gradient(obj, x, id, idx, indice)
 
             h = 1e-4;
+            
+            if obj.dataset_dim == 2
+                x_curr_batch = obj.x_train(indice,:);
+                y_curr_batch = obj.y_train(indice,:);
+            elseif obj.dataset_dim == 4
+                x_curr_batch = obj.x_train(indice,:,:,:);
+                y_curr_batch = obj.y_train(indice,:,:,:);   
+            else
+            end              
 
             row = size(x, 1);
             col = size(x, 2);
@@ -224,11 +285,11 @@ classdef simple_conv_net < handle
                     
                     % replace idx-th element with "vec_x(idx) + h" 
                     x(row_idx, col_idx) = tmp_val + h;
-                    f_plus_h = obj.loss_for_numerical_grad_calc(x, id, idx, x_curr_batch, t_curr_batch); % f(x+h)
+                    f_plus_h = obj.loss_for_numerical_grad_calc(x, id, idx, x_curr_batch, y_curr_batch); % f(x+h)
 
                     % replace idx-th element with "vec_x(idx) - h"
                     x(row_idx, col_idx) = tmp_val - h;
-                    f_minus_h = obj.loss_for_numerical_grad_calc(x, id, idx, x_curr_batch, t_curr_batch);% f(x-h)
+                    f_minus_h = obj.loss_for_numerical_grad_calc(x, id, idx, x_curr_batch, y_curr_batch);% f(x-h)
 
                     % calculate gradient
                     grad(row_idx, col_idx) = (f_plus_h - f_minus_h) / (2*h);
@@ -285,12 +346,12 @@ classdef simple_conv_net < handle
         
         
         % 2. backprop gradient
-        function grads = gradient(obj, x, t)
+        function grads = gradient(obj, indice)
             
             % calculate gradients
             
             % forward
-            loss(obj, x, t, true);
+            loss_partial(obj, indice, true);                 
             
             dout = 1;
             dout = obj.layer_manager.last_layer.backward(dout);
@@ -310,8 +371,6 @@ classdef simple_conv_net < handle
             grads = obj.grads;
 
         end
-        
-
         
     end
 

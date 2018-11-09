@@ -15,9 +15,8 @@ dropout_flag = 0;
 dropout_ratio = 0.2;
 w_decay_lambda = 0.01; % l2-norm regularization. 0.1 ? (0 ... 1)
 use_num_grad = 0;
-%opt_alg = 'SGD';
-%opt_alg = 'Momuentum';
-opt_alg = 'AdaGrad';
+
+
 
 
 if 0
@@ -53,13 +52,19 @@ dataset_name = 'usps';
 
 
 % set network
-network = multilayer_neural_net(dimension, [100, 100, 100, 100, 100], class_num, 'relu', 'relu', ...
+network = multilayer_neural_net(x_train, t_train, x_test, t_test, dimension, [100, 100, 100, 100, 100], class_num, 'relu', 'relu', ...
                 w_decay_lambda, dropout_flag, dropout_ratio, batchnorm_flag, use_num_grad);
 
 
 % set trainer
-trainer = nn_trainer(network, x_train, t_train, x_test, t_test, opt_alg, learning_rate, ...
-                 max_epoch, batch_size, verbose);
+options.opt_alg = 'AdaGrad';
+%options.opt_alg = 'SGD';
+%options.opt_alg = 'Momuentum';
+options.max_epoch = 30;
+options.step_init = learning_rate;
+options.verbose = 1;
+options.batch_size = batch_size;
+trainer = nn_trainer(network, options);
 
 
 %train             

@@ -19,6 +19,10 @@ classdef multilayer_neural_net < handle
 %       Added get_params method.
 %       Added calculate_grads method.
 %
+%   Nov. 09, 2018 (H.Kasai)
+%       Moved data properties from nn_trainer class to this class.
+%       Moved params and grads from nn_trainer class to this class.
+%
 % This class was originally ported from the python library below.
 % https://github.com/oreilly-japan/deep-learning-from-scratch.
 % Major modifications have been made for MATLAB implementation and  
@@ -26,23 +30,32 @@ classdef multilayer_neural_net < handle
 
 
     properties
+        
         name; 
         
-        % size
+        % layers
+        layer_manager; 
+        hidden_layer_num;        
+        
+        % size 
         input_size;
         hidden_size_list;
-        output_size;        
+        output_size;             
         
         % parameters (W, b)
         params;
-        param_keys;        
-        
-        % layers
-        layer_manager;
-        hidden_layer_num;
+        %param_keys;            
         
         % grads
-        grads;        
+        grads;         
+        
+        % data
+        x_train;
+        y_train;
+        x_test;
+        y_test; 
+        train_size;        
+        dataset_dim;        
         
         % else
         activation_type;
@@ -55,16 +68,22 @@ classdef multilayer_neural_net < handle
     end
     
     methods
-        function obj = multilayer_neural_net(input_size, hidden_size_list, output_size, ...
+        function obj = multilayer_neural_net(x_train, y_train, x_test, y_test, input_size, hidden_size_list, output_size, ...
                 act_type, w_init_std, w_decay_lambda, use_do, do_ratio, use_bn, use_num_grad)
             
             
 
-            obj.name = 'multilayer_neural_net';  
+            obj.name = 'multilayer_neural_net'; 
+            obj.x_train = x_train;
+            obj.y_train = y_train;
+            obj.x_test = x_test;
+            obj.y_test = y_test;               
             obj.input_size = input_size;
             obj.hidden_size_list = hidden_size_list;
             obj.output_size = output_size;
             obj.hidden_layer_num = length(hidden_size_list);
+            obj.train_size = size(x_train, 1);
+            obj.dataset_dim = ndims(x_train);               
             
             obj.activation_type = act_type;
             obj.weight_init_std_type = w_init_std;
@@ -96,12 +115,12 @@ classdef multilayer_neural_net < handle
                 end
                 obj.params(['W', num2str(idx)]) = scale * randn(all_size_list(idx), all_size_list(idx+1));
                 param_num = param_num + 1;
-                obj.param_keys{param_num} = ['W', num2str(idx)];
+                %obj.param_keys{param_num} = ['W', num2str(idx)];
                 obj.grads(['W', num2str(idx)]) = [];
                 
                 obj.params(['b', num2str(idx)]) = zeros(1, all_size_list(idx+1));
                 param_num = param_num + 1;
-                obj.param_keys{param_num} = ['b', num2str(idx)];                
+                %obj.param_keys{param_num} = ['b', num2str(idx)];                
                 obj.grads(['b', num2str(idx)]) = [];
 
             end
@@ -119,11 +138,11 @@ classdef multilayer_neural_net < handle
                 if obj.use_batchnorm
                     obj.params(['gamma', num2str(idx)]) = ones(1, obj.hidden_size_list(idx));
                     param_num = param_num + 1;
-                    obj.param_keys{param_num} = ['gamma', num2str(idx)]; 
+                    %obj.param_keys{param_num} = ['gamma', num2str(idx)]; 
                 
                     obj.params(['beta', num2str(idx)]) = zeros(1, obj.hidden_size_list(idx));
                     param_num = param_num + 1;
-                    obj.param_keys{param_num} = ['beta', num2str(idx)]; 
+                    %obj.param_keys{param_num} = ['beta', num2str(idx)]; 
                     
                     obj.layer_manager = obj.layer_manager.add_layer('batchnorm', obj.params(['gamma', num2str(idx)]), obj.params(['beta', num2str(idx)]), []);
                 end
@@ -180,15 +199,37 @@ classdef multilayer_neural_net < handle
         
         
 
-        function f = loss(obj, x, t, varargin)
+        function f = loss(obj, varargin)
             
-            if nargin < 4
-                train_flg = false;
+            if nargin < 2
+                train_flag = false;
             else
-                train_flg = varargin{1};
+                train_flag = varargin{1};
+            end               
+            
+            f = loss_partial(obj, 1:obj.train_size, train_flag);
+            
+        end
+        
+        
+        function f = loss_partial(obj, indice, varargin)
+            
+            if nargin < 3
+                train_flag = false;
+            else
+                train_flag = varargin{1};
+            end          
+            
+            if obj.dataset_dim == 2
+                x_curr_batch = obj.x_train(indice,:);
+                y_curr_batch = obj.y_train(indice,:);
+            elseif obj.dataset_dim == 4
+                x_curr_batch = obj.x_train(indice,:,:,:);
+                y_curr_batch = obj.y_train(indice,:,:,:);   
+            else
             end             
             
-            y = obj.predict(x, train_flg);
+            y = obj.predict(x_curr_batch, train_flag);
             
             weight_decay = 0;
             for idx = 1 : obj.hidden_layer_num + 1
@@ -196,23 +237,23 @@ classdef multilayer_neural_net < handle
                 weight_decay = weight_decay + 0.5 * obj.weight_decay_lambda * sum(sum(W.^2));
             end
 
-            f = obj.layer_manager.last_layer.forward(y, t) + weight_decay;
+            f = obj.layer_manager.last_layer.forward(y, y_curr_batch) + weight_decay;
             
         end
-        
+
         
         
         function y = predict(obj, x, varargin)
             
             if nargin < 3
-                train_flg = false;
+                train_flag = false;
             else
-                train_flg = varargin{1};
+                train_flag = varargin{1};
             end              
             
             for idx = 1 : obj.layer_manager.total_num
                 if strcmpi(obj.layer_manager.layers{idx}.name, 'dropout') || strcmpi(obj.layer_manager.layers{idx}.name, 'batch_normalization')
-                    x = obj.layer_manager.layers{idx}.forward(x, train_flg);
+                    x = obj.layer_manager.layers{idx}.forward(x, train_flag);
                 else
                     x = obj.layer_manager.layers{idx}.forward(x);
                 end
@@ -224,17 +265,25 @@ classdef multilayer_neural_net < handle
         
         
         
-        function accuracy = accuracy(obj, x, t, varargin)
+        function accuracy = accuracy(obj, varargin)
             
-            if nargin < 4
-                train_flg = false;
+            if nargin < 2
+                train_flag = false;
             else
-                train_flg = varargin{1};
-            end              
+                train_flag = varargin{1};
+            end   
+            
+            if strcmp(train_flag, 'train')
+                x = obj.x_train;
+                t = obj.y_train;
+            else
+                x = obj.x_test;
+                t = obj.y_test;                
+            end            
             
             batch_size = size(x, 1);
 
-            y = obj.predict(x, train_flg);
+            y = obj.predict(x, false);
             [~, y] = max(y, [], 2);
             [~, t] = max(t, [], 2);
             
@@ -245,30 +294,31 @@ classdef multilayer_neural_net < handle
         
         
         %% calculate gradient
-        function grads = calculate_grads(obj, x_curr_batch, t_curr_batch)
+        function grads = calculate_grads(obj, indice)
             
             if obj.use_num_grad
-                obj.grads = obj.numerical_gradient(x_curr_batch, t_curr_batch);
+                obj.grads = obj.numerical_gradient(indice);
             else
-                obj.grads = obj.gradient(x_curr_batch, t_curr_batch);
+                obj.grads = obj.gradient(indice);
             end  
             
             grads = obj.grads;
-        end
+        end        
         
         
         
         % 1. numerical gradient
-        function grads = numerical_gradient(obj, x_curr_batch, t_curr_batch)
+        function grads = numerical_gradient(obj, indice)
             
             grads = [];
+            
             for idx = 1 : obj.hidden_layer_num + 1
-                grads.W{idx} = obj.calc_numerical_gradient(obj.params.W{idx}, 'W', idx, x_curr_batch, t_curr_batch);
-                grads.b{idx} = obj.calc_numerical_gradient(obj.params.b{idx}, 'b', idx, x_curr_batch, t_curr_batch); 
+                grads.W{idx} = obj.calc_numerical_gradient(obj.params.W{idx}, 'W', idx, indice);
+                grads.b{idx} = obj.calc_numerical_gradient(obj.params.b{idx}, 'b', idx, indice); 
 
                 if obj.use_batchnorm && idx ~= obj.hidden_layer_num + 1
-                    grads.gamma{idx} = obj.calc_numerical_gradient(obj.batchnorm_layers{idx}.gamma, 'gamma', idx, x_curr_batch, t_curr_batch);
-                    grads.beta{idx} = obj.calc_numerical_gradient(obj.batchnorm_layers{idx}.beta, 'beta', idx, x_curr_batch, t_curr_batch);                    
+                    grads.gamma{idx} = obj.calc_numerical_gradient(obj.batchnorm_layers{idx}.gamma, 'gamma', idx, indice);
+                    grads.beta{idx} = obj.calc_numerical_gradient(obj.batchnorm_layers{idx}.beta, 'beta', idx, indice);                    
                 end
 
             end    
@@ -279,9 +329,18 @@ classdef multilayer_neural_net < handle
         
         
         
-        function grad = calc_numerical_gradient(obj, x, id, idx, x_curr_batch, t_curr_batch)
+        function grad = calc_numerical_gradient(obj, x, id, idx, indice)
 
             h = 1e-4;
+            
+            if obj.dataset_dim == 2
+                x_curr_batch = obj.x_train(indice,:);
+                y_curr_batch = obj.y_train(indice,:);
+            elseif obj.dataset_dim == 4
+                x_curr_batch = obj.x_train(indice,:,:,:);
+                y_curr_batch = obj.y_train(indice,:,:,:);   
+            else
+            end              
 
             row = size(x, 1);
             col = size(x, 2);
@@ -294,11 +353,11 @@ classdef multilayer_neural_net < handle
                     
                     % replace idx-th element with "vec_x(idx) + h" 
                     x(row_idx, col_idx) = tmp_val + h;
-                    f_plus_h = obj.loss_for_numerical_grad_calc(x, id, idx, x_curr_batch, t_curr_batch); % f(x+h)
+                    f_plus_h = obj.loss_for_numerical_grad_calc(x, id, idx, x_curr_batch, y_curr_batch); % f(x+h)
 
                     % replace idx-th element with "vec_x(idx) - h"
                     x(row_idx, col_idx) = tmp_val - h;
-                    f_minus_h = obj.loss_for_numerical_grad_calc(x, id, idx, x_curr_batch, t_curr_batch);% f(x-h)
+                    f_minus_h = obj.loss_for_numerical_grad_calc(x, id, idx, x_curr_batch, y_curr_batch);% f(x-h)
 
                     % calculate gradient
                     grad(row_idx, col_idx) = (f_plus_h - f_minus_h) / (2*h);
@@ -373,10 +432,10 @@ classdef multilayer_neural_net < handle
         
         
         % 2. backprop gradient
-        function grads = gradient(obj, x, t)
+        function grads = gradient(obj, indice)
             
             % forward
-            loss(obj, x, t, true);
+            loss_partial(obj, indice, true);            
             
             dout = 1;
             dout = obj.layer_manager.last_layer.backward(dout);
@@ -400,10 +459,6 @@ classdef multilayer_neural_net < handle
             
         end
         
-        
-
-        
-
         
     end
 

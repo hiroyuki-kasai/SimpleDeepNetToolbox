@@ -17,6 +17,10 @@ classdef two_layer_net < handle
 %       Added get_params method.
 %       Added calculate_grads method.
 %
+%   Nov. 09, 2018 (H.Kasai)
+%       Moved data properties from nn_trainer class to this class.
+%       Moved params and grads from nn_trainer class to this class.
+%
 % This class was originally ported from the python library below.
 % https://github.com/oreilly-japan/deep-learning-from-scratch.
 % Major modifications have been made for MATLAB implementation and  
@@ -24,22 +28,30 @@ classdef two_layer_net < handle
 
 
     properties
+        
         name;  
         
-        % size
-        input_size;
+        % layers
+        layer_manager; 
+        
+        % size  
+        input_size;  
         hidden_size;
-        output_size;        
+        output_size;             
         
         % parameters (W, b)
         params;
-        param_keys;        
-        
-        % layers
-        layer_manager;
         
         % grads
         grads;        
+        
+        % data
+        x_train;
+        y_train;
+        x_test;
+        y_test; 
+        train_size;        
+        dataset_dim;
         
         % else
         weight_init_std;
@@ -48,9 +60,9 @@ classdef two_layer_net < handle
     end
     
     methods
-        function obj = two_layer_net(input_size, hidden_size, output_size, varargin) 
+        function obj = two_layer_net(x_train, y_train, x_test, y_test, input_size, hidden_size, output_size, varargin) 
             
-            if nargin < 4
+            if nargin < 8
                 % no network options
                 obj.weight_init_std = 0.01;
                 obj.use_num_grad = 0;
@@ -70,9 +82,15 @@ classdef two_layer_net < handle
 
             end
 
-            obj.name = 'two_layer_net';  
+            obj.name = 'two_layer_net';
+            obj.x_train = x_train;
+            obj.y_train = y_train;
+            obj.x_test = x_test;
+            obj.y_test = y_test;            
             obj.hidden_size = hidden_size;
             obj.output_size = output_size;
+            obj.train_size = size(x_train, 1);
+            obj.dataset_dim = ndims(x_train);            
 
             
 
@@ -82,19 +100,16 @@ classdef two_layer_net < handle
             obj.grads = containers.Map('KeyType','char','ValueType','any');
             
             obj.params('W1') = obj.weight_init_std * randn(input_size, hidden_size);
-            obj.param_keys{1} = 'W1';
             obj.grads('W1') = [];
 
             obj.params('b1') = zeros(1, hidden_size);
-            obj.param_keys{2} = 'b1';                
+             
             obj.grads('b1') = [];     
             
             obj.params('W2') = obj.weight_init_std * randn(hidden_size, output_size);
-            obj.param_keys{3} = 'W2';
             obj.grads('W2') = [];
 
-            obj.params('b2') = zeros(1, output_size);
-            obj.param_keys{4} = 'b2';                
+            obj.params('b2') = zeros(1, output_size);            
             obj.grads('b2') = []; 
             
             
@@ -135,13 +150,29 @@ classdef two_layer_net < handle
         
         
         
-        function f = loss(obj, x, t)
+        function f = loss(obj)
             
-            y = obj.predict(x);
-
-            f = obj.layer_manager.last_layer.forward(y, t);
+            f = loss_partial(obj, 1:obj.train_size);
             
         end
+        
+        
+        function f = loss_partial(obj, indice)
+            
+            if obj.dataset_dim == 2
+                x_curr_batch = obj.x_train(indice,:);
+                y_curr_batch = obj.y_train(indice,:);
+            elseif obj.dataset_dim == 4
+                x_curr_batch = obj.x_train(indice,:,:,:);
+                y_curr_batch = obj.y_train(indice,:,:,:);   
+            else
+            end              
+            
+            y = obj.predict(x_curr_batch);
+
+            f = obj.layer_manager.last_layer.forward(y, y_curr_batch);
+            
+        end        
         
         
         
@@ -157,7 +188,15 @@ classdef two_layer_net < handle
         
 
         
-        function accuracy = accuracy(obj, x, t)
+        function accuracy = accuracy(obj, train_flag)
+            
+            if strcmp(train_flag, 'train')
+                x = obj.x_train;
+                t = obj.y_train;
+            else
+                x = obj.x_test;
+                t = obj.y_test;                
+            end
             
             batch_size = size(x, 1);
 
@@ -173,33 +212,44 @@ classdef two_layer_net < handle
         
         
         %% calculate gradient
-        function grads = calculate_grads(obj, x_curr_batch, t_curr_batch)
+        function grads = calculate_grads(obj, indice)
             
             if obj.use_num_grad
-                obj.grads = obj.numerical_gradient(x_curr_batch, t_curr_batch);
+                obj.grads = obj.numerical_gradient(indice);
             else
-                obj.grads = obj.gradient(x_curr_batch, t_curr_batch);
+                obj.grads = obj.gradient(indice);
             end  
             
             grads = obj.grads;
         end
         
         
+        
         % 1. numerical gradient
-        function grads = numerical_gradient(obj, x_curr_batch, t_curr_batch)
-            
+        function grads = numerical_gradient(obj, indice)
+
             grads = [];
 
-                grads('W1') = obj.calc_numerical_gradient(obj.params('W1'), 'W1', x_curr_batch, t_curr_batch);
-                grads('b1') = obj.calc_numerical_gradient(obj.params('b1'), 'b1', x_curr_batch, t_curr_batch);
-                grads('W2') = obj.calc_numerical_gradient(obj.params('W2'), 'W2', x_curr_batch, t_curr_batch);
-                grads('b2') = obj.calc_numerical_gradient(obj.params('b2'), 'b2', x_curr_batch, t_curr_batch);                
+            grads('W1') = obj.calc_numerical_gradient(obj.params('W1'), 'W1', indice);
+            grads('b1') = obj.calc_numerical_gradient(obj.params('b1'), 'b1', indice);
+            grads('W2') = obj.calc_numerical_gradient(obj.params('W2'), 'W2', indice);
+            grads('b2') = obj.calc_numerical_gradient(obj.params('b2'), 'b2', indice);                
 
         end
         
-        function grad = calc_numerical_gradient(obj,  x, id, x_curr_batch, t_curr_batch)
+        
+        function grad = calc_numerical_gradient(obj, x, id, indice)
 
             h = 1e-4;
+            
+            if obj.dataset_dim == 2
+                x_curr_batch = obj.x_train(indice,:);
+                y_curr_batch = obj.y_train(indice,:);
+            elseif obj.dataset_dim == 4
+                x_curr_batch = obj.x_train(indice,:,:,:);
+                y_curr_batch = obj.y_train(indice,:,:,:);   
+            else
+            end                
 
             row = size(x, 1);
             col = size(x, 2);
@@ -213,12 +263,12 @@ classdef two_layer_net < handle
                     % replace idx-th element with "vec_x(idx) + h" 
                     x(row_idx, col_idx) = tmp_val + h;
                     %f_plus_h = f(x, id, x_curr_batch, t_curr_batch); % f(x+h)
-                    f_plus_h = obj.loss_for_numerical_grad_calc(x, id, x_curr_batch, t_curr_batch);
+                    f_plus_h = obj.loss_for_numerical_grad_calc(x, id, x_curr_batch, y_curr_batch);
 
                     % replace idx-th element with "vec_x(idx) - h"
                     x(row_idx, col_idx) = tmp_val - h;
                     %f_minus_h = f(x, id, x_curr_batch, t_curr_batch); % f(x+h)
-                    f_minus_h = obj.loss_for_numerical_grad_calc(x, id, x_curr_batch, t_curr_batch);
+                    f_minus_h = obj.loss_for_numerical_grad_calc(x, id, x_curr_batch, y_curr_batch);
 
                     % calculate gradient
                     grad(row_idx, col_idx) = (f_plus_h - f_minus_h) / (2*h);
@@ -231,15 +281,31 @@ classdef two_layer_net < handle
         end
         
 
-        function f = loss_for_numerical_grad_calc(obj, w, id, x_curr_batch, t_curr_batch)
+        function f = loss_for_numerical_grad_calc(obj, w, id, indice)
+            
+            if obj.dataset_dim == 2
+                x_curr_batch = obj.x_train(indice,:);
+                y_curr_batch = obj.y_train(indice,:);
+            elseif obj.dataset_dim == 4
+                x_curr_batch = obj.x_train(indice,:,:,:);
+                y_curr_batch = obj.y_train(indice,:,:,:);   
+            else
+            end            
             
             y = obj.predict_for_numerical_grad(w, id, x_curr_batch);
-            f = cross_entropy_error(y, t_curr_batch);
+            f = cross_entropy_error(y, y_curr_batch);
             
         end
         
         
-        function y = predict_for_numerical_grad(obj, w, id, x_curr_batch)
+        function y = predict_for_numerical_grad(obj, w, id, indice)
+            
+            if obj.dataset_dim == 2
+                x_curr_batch = obj.x_train(indice,:);
+            elseif obj.dataset_dim == 4
+                x_curr_batch = obj.x_train(indice,:,:,:);
+            else
+            end                
             
             batch_size = size(x_curr_batch, 1);
             
@@ -271,13 +337,11 @@ classdef two_layer_net < handle
         
         
         
-        
-        
         % 2. backprop gradient
-        function grads = gradient(obj, x, t)
+        function grads = gradient(obj, indice)
             
             % forward
-            loss(obj, x, t);
+            loss_partial(obj, indice);
             
             dout = 1;
             dout = obj.layer_manager.last_layer.backward(dout);
@@ -294,11 +358,6 @@ classdef two_layer_net < handle
 
             grads = obj.grads;
         end
-        
-        
-
-        
-
         
     end
 
