@@ -171,7 +171,7 @@ Finally, `display_graph()` provides output results of decreasing behavior of the
 
 ```Matlab
 % plot
-display_graph('epoch', 'cost', {'Tow layer net'}, {}, {info});    
+display_graph('epoch', 'cost', {'Two layer net'}, {}, {info});    
 
 train_info = info;
 test_info = info;
