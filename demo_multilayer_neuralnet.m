@@ -18,16 +18,19 @@ dataset_name = 'mnist';
 
 
 % set network
-network = multilayer_neural_net(x_train, t_train, x_test, t_test, dimension, [100 80], class_num, 'relu', 'relu', 0.01, 1, 0.5, 0, 0);
+network = multilayer_neural_net(x_train, t_train, x_test, t_test, ...
+        dimension, [100 80], class_num, 'relu', 'relu', 0.01, 0, 0, 1, 0);
 
 
 % set trainer
 options.opt_alg = 'AdaGrad';
-%options.opt_alg = 'SVRG';
+%options.opt_alg = 'Momentum';
 %options.opt_alg = 'SGD';
 %options.opt_alg = 'SVRG';
-options.max_epoch = 20;
-options.step_init = 0.1;
+%options.opt_alg = 'SARAH';
+%options.opt_alg = 'SAGA';
+options.max_epoch = 500;
+options.opt_options.step_init = 0.001;
 options.verbose = 2;
 options.batch_size = 100;
 trainer = nn_trainer(network, options);

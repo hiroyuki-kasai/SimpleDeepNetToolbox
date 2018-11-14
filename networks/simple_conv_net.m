@@ -1,4 +1,4 @@
-classdef simple_conv_net < handle
+classdef simple_conv_net < nn_layer_basis
 % This file defines simple convolutional class.
 %
 %
@@ -21,6 +21,9 @@ classdef simple_conv_net < handle
 %       Moved data properties from nn_trainer class to this class.
 %       Moved params from nn_trainer class to this class.
 %
+%   Nov. 13, 2018 (H.Kasai)
+%       Inherit from nn_layer_basis
+%
 % This class was originally ported from the python library below.
 % https://github.com/oreilly-japan/deep-learning-from-scratch.
 % Major modifications have been made for MATLAB implementation and  
@@ -28,30 +31,7 @@ classdef simple_conv_net < handle
 
 
     properties
-        
-        name; 
-        
-        % layers
-        layer_manager; 
-        
-        % size        
-        hidden_size_list;
-        output_size;             
-        
-        % parameters (W, b)
-        params;
-        
-        % data
-        x_train;
-        y_train;
-        x_test;
-        y_test; 
-        samples;        
-        dataset_dim;             
-        
-        % else
-        use_num_grad;
-        
+              
     end
     
     methods
@@ -81,11 +61,19 @@ classdef simple_conv_net < handle
             %% initialize weights
             obj.params = containers.Map('KeyType', 'char','ValueType', 'any');
             obj.params('W1') = weight_init_std * randn(filter_num, input_dim(1), filter_size, filter_size);
+            obj.param_keys{1} = 'W1';
             obj.params('b1') = zeros(1, filter_num);
+            obj.param_keys{2} = 'b1';
             obj.params('W2') = weight_init_std * randn(pool_output_size, hidden_size);
+            obj.param_keys{3} = 'W2';
             obj.params('b2') = zeros(1, hidden_size);
+            obj.param_keys{4} = 'b2';
             obj.params('W3') = weight_init_std * randn(hidden_size, output_size);
+            obj.param_keys{5} = 'W3';
             obj.params('b3') = zeros(1, output_size);
+            obj.param_keys{6} = 'b3';
+            
+            obj.param_num = 6;
             
 
             

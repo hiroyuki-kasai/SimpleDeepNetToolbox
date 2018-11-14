@@ -14,6 +14,8 @@ classdef nn_trainer < handle
 %       Moved data properties to network class.
 %       Moved params and grads to network class.
 %
+%   Nov. 13, 2018 (H.Kasai)
+%       Removed preprocessor.
 %
 %
 % This class was originally ported from the python library below.
@@ -37,6 +39,7 @@ classdef nn_trainer < handle
         max_iter;
         info;
         rand_index;
+        num_of_bachces;
         
     end
     
@@ -65,10 +68,23 @@ classdef nn_trainer < handle
             obj.iter_num_per_epoch = max(fix(obj.samples / obj.options.batch_size), 1);
             obj.max_iter = obj.options.max_epoch * obj.iter_num_per_epoch;
             
+            %
+            obj.num_of_bachces = floor(obj.samples * obj.options.inner_repeat / obj.options.batch_size);  
+            obj.options.opt_options.num_of_bachces = obj.num_of_bachces;
+            if strcmp(obj.options.opt_alg, 'SAG') || strcmp(obj.options.opt_alg, 'SAGA')
+                obj.options.permute_on = 0;
+            end
+            
             
             % generate optimizer
             params = obj.network.get_params();
-            obj.optimizer = stochastic_optimizer(obj.network, params, obj.options.opt_alg, obj.options.step_init, []);              
+            obj.optimizer = stochastic_optimizer(obj.network, params, obj.options.opt_alg, obj.options.opt_options); 
+            
+            
+
+
+
+                        
 
 
         end
@@ -87,12 +103,6 @@ classdef nn_trainer < handle
                 obj.iter_per_epoch = 1;
                 obj.current_epoch = obj.current_epoch + 1;
                 
-                % preprocess for epoch
-                if ~isempty(obj.optimizer.preprocess)
-                    params = obj.network.get_params(); 
-                    [~] = obj.optimizer.preprocess(params);  
-                end   
-                
             else
                 obj.iter_per_epoch = obj.iter_per_epoch + 1;
             end
@@ -105,7 +115,7 @@ classdef nn_trainer < handle
 
             % get/update/set params from network
             params = obj.network.get_params();            
-            params = obj.optimizer.update(params, obj.options.step_init, indice);
+            params = obj.optimizer.update(params, indice, obj.iter_per_epoch, obj.current_epoch);
             obj.network.set_params(params);
             
             % store and display infos

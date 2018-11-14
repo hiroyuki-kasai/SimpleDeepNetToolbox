@@ -1,4 +1,4 @@
-classdef two_layer_net < handle
+classdef two_layer_net < nn_layer_basis
 % This file defines multi-layer neural network class.
 %
 %
@@ -21,6 +21,9 @@ classdef two_layer_net < handle
 %       Moved data properties from nn_trainer class to this class.
 %       Moved params and grads from nn_trainer class to this class.
 %
+%   Nov. 13, 2018 (H.Kasai)
+%       Inherit from nn_layer_basis
+%
 % This class was originally ported from the python library below.
 % https://github.com/oreilly-japan/deep-learning-from-scratch.
 % Major modifications have been made for MATLAB implementation and  
@@ -28,31 +31,6 @@ classdef two_layer_net < handle
 
 
     properties
-        
-        name;  
-        
-        % layers
-        layer_manager; 
-        
-        % size  
-        input_size;  
-        hidden_size;
-        output_size;             
-        
-        % parameters (W, b)
-        params;
-        
-        % data
-        x_train;
-        y_train;
-        x_test;
-        y_test; 
-        samples;        
-        dataset_dim;
-        
-        % else
-        weight_init_std;
-        use_num_grad;
         
     end
     
@@ -95,11 +73,17 @@ classdef two_layer_net < handle
             %% initialize weights
             obj.params = containers.Map('KeyType','char','ValueType','any');
             obj.params('W1') = obj.weight_init_std * randn(input_size, hidden_size);
+            obj.param_keys{1} = 'W1';
             obj.params('b1') = zeros(1, hidden_size);
+            obj.param_keys{2} = 'b1';
             obj.params('W2') = obj.weight_init_std * randn(hidden_size, output_size);
-            obj.params('b2') = zeros(1, output_size);            
+            obj.param_keys{3} = 'W2';
+            obj.params('b2') = zeros(1, output_size); 
+            obj.param_keys{4} = 'b2';
             
-            
+            obj.param_num = 4;
+         
+
             %% generate layers
             obj.layer_manager = layer_manager();            
             

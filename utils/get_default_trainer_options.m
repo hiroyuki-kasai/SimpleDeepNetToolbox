@@ -1,10 +1,6 @@
 function options = get_default_trainer_options()
 
-    %options.stepsizefun     = @stepsize_alg;
-    options.opt_alg         = 'SGD';
-    options.step_alg        = 'fix';
-    options.step_init       = 0.01;
-    options.lambda          = 0.1;    
+    options.opt_alg         = 'AdaGrad';
     options.tol_optgap      = 1.0e-12;
     options.batch_size      = 100;
     options.max_epoch       = 20;
@@ -15,6 +11,10 @@ function options = get_default_trainer_options()
     options.store_w         = false;
     options.store_subinfo   = false;
     options.inner_repeat    = 1;
+    
+    options.opt_options.step_alg        = 'fix';
+    options.opt_options.step_init       = 0.01;
+    options.opt_options.lambda          = 0.1;     
 
 end
 

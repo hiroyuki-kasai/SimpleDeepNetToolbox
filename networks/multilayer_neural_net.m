@@ -1,4 +1,4 @@
-classdef multilayer_neural_net < handle
+classdef multilayer_neural_net < nn_layer_basis
 % This file defines multi-layer neural network class.
 %
 %
@@ -23,6 +23,9 @@ classdef multilayer_neural_net < handle
 %       Moved data properties from nn_trainer class to this class.
 %       Moved params from nn_trainer class to this class.
 %
+%   Nov. 13, 2018 (H.Kasai)
+%       Inherit from nn_layer_basis
+%
 % This class was originally ported from the python library below.
 % https://github.com/oreilly-japan/deep-learning-from-scratch.
 % Major modifications have been made for MATLAB implementation and  
@@ -31,37 +34,6 @@ classdef multilayer_neural_net < handle
 
     properties
         
-        name; 
-        
-        % layers
-        layer_manager; 
-        hidden_layer_num;        
-        
-        % size 
-        input_size;
-        hidden_size_list;
-        output_size;             
-        
-        % parameters (W, b)
-        params;
-        %param_keys;            
-        
-        % data
-        x_train;
-        y_train;
-        x_test;
-        y_test; 
-        samples;        
-        dataset_dim;        
-        
-        % else
-        activation_type;
-        weight_init_std_type;
-        weight_decay_lambda;
-        use_dropout;
-        dropout_ratio;
-        use_batchnorm;
-        use_num_grad;
     end
     
     methods
@@ -111,14 +83,13 @@ classdef multilayer_neural_net < handle
                 end
                 obj.params(['W', num2str(idx)]) = scale * randn(all_size_list(idx), all_size_list(idx+1));
                 param_num = param_num + 1;
-                %obj.param_keys{param_num} = ['W', num2str(idx)];
+                obj.param_keys{param_num} = ['W', num2str(idx)];
                 
                 obj.params(['b', num2str(idx)]) = zeros(1, all_size_list(idx+1));
                 param_num = param_num + 1;
-                %obj.param_keys{param_num} = ['b', num2str(idx)];                
+                obj.param_keys{param_num} = ['b', num2str(idx)];                
 
             end
-            
             
             
             %% generate layers
@@ -132,11 +103,11 @@ classdef multilayer_neural_net < handle
                 if obj.use_batchnorm
                     obj.params(['gamma', num2str(idx)]) = ones(1, obj.hidden_size_list(idx));
                     param_num = param_num + 1;
-                    %obj.param_keys{param_num} = ['gamma', num2str(idx)]; 
+                    obj.param_keys{param_num} = ['gamma', num2str(idx)]; 
                 
                     obj.params(['beta', num2str(idx)]) = zeros(1, obj.hidden_size_list(idx));
                     param_num = param_num + 1;
-                    %obj.param_keys{param_num} = ['beta', num2str(idx)]; 
+                    obj.param_keys{param_num} = ['beta', num2str(idx)]; 
                     
                     obj.layer_manager = obj.layer_manager.add_layer('batchnorm', obj.params(['gamma', num2str(idx)]), obj.params(['beta', num2str(idx)]), []);
                 end
@@ -150,6 +121,8 @@ classdef multilayer_neural_net < handle
                 end
 
             end
+            
+            obj.param_num = param_num;
 
             % generate final affine layer
             obj.layer_manager = obj.layer_manager.add_layer('affine', obj.params(['W', num2str(idx+1)]), obj.params(['b', num2str(idx+1)]));
