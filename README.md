@@ -32,7 +32,7 @@ The main purpose of this toolbox is to allows you, especially "MATLAB-lover" res
 
 
 - **Affine layer** 
-- **Conolution layer**
+- **Convolution layer**
 - **Pooling layer**
 - **Dropout layer**
 - **Batch normalization layer** (Under construction)
